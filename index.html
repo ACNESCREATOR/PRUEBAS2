@@ -249,7 +249,7 @@
     </section>
 
     <!-- ========================================================================
-         4. FORMULARIO DE PEDIDOS + PÁGINA/VISTA DE ACTUALIZACIÓN DE ESTADO
+         4. FORMULARIO DE PEDIDOS + PÁGINA/VISTA DE SEGUIMIENTO Y CHAT EN VIVO
          ======================================================================== -->
     <section id="pedido" class="max-w-6xl mx-auto px-4 sm:px-8 py-14 scroll-mt-20">
 
@@ -391,14 +391,23 @@
       </div>
 
       <!-- ====================================================================
-           VISTA DE SEGUIMIENTO DEL PEDIDO (APARECE TRAS ENVIAR)
+           VISTA DE SEGUIMIENTO DEL PEDIDO + CHAT EN VIVO (APARECE TRAS ENVIAR)
            ==================================================================== -->
       <div id="seguimiento" class="hidden max-w-3xl mx-auto bg-ake-panel/95 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-ake-accent/60 shadow-2xl space-y-6">
+
+        <!-- Aviso importante de no actualizar la página -->
+        <div class="rounded-xl bg-amber-500/15 border border-amber-400/50 px-4 py-3.5 flex items-start gap-3">
+          <span class="text-lg leading-none mt-0.5" aria-hidden="true">⚠️</span>
+          <div class="text-xs sm:text-sm text-amber-100">
+            <strong class="font-display font-bold text-amber-300 block">No actualices ni cierres esta página hasta recibir tu pedido.</strong>
+            <span>Aquí verás en tiempo real cuando tu orden pase a <strong>Preparando</strong> o <strong>En camino</strong> y podrás escribirnos por el chat del pedido.</span>
+          </div>
+        </div>
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-ake-line">
           <div>
             <span class="font-display text-xs font-semibold uppercase tracking-widest text-ake-accent">
-              Estado de tu Pedido · AKE Tacos Cloud
+              Seguimiento en Vivo · AKE Tacos Cloud
             </span>
             <h3 class="font-display text-2xl sm:text-3xl font-bold text-white mt-1">
               Folio: <span id="receiptFolio" class="text-ake-accent">AKE-2026-0000</span>
@@ -458,25 +467,37 @@
           <span id="receiptTotal" class="text-xl font-extrabold text-ake-accent">$0.00</span>
         </div>
 
-        <!-- Controles de prueba rápida para simular el cambio de estatus desde AKE Tacos Cloud -->
-        <div class="bg-ake-surface rounded-xl p-4 border border-ake-line space-y-2.5">
-          <span class="block font-display text-[11px] font-semibold uppercase tracking-wider text-ake-maiz">
-            Vista previa de estatus (mismas opciones que en AKE Tacos Cloud)
-          </span>
-          <div class="flex flex-wrap gap-2">
-            <button type="button" data-sim-estado="Recibido" class="sim-estado-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-ake-bg border border-ake-line text-[#D1D5DB] hover:border-ake-accent cursor-pointer">
-              Recibido
-            </button>
-            <button type="button" data-sim-estado="Preparando" class="sim-estado-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-ake-bg border border-ake-line text-[#D1D5DB] hover:border-ake-accent cursor-pointer">
-              Preparando
-            </button>
-            <button type="button" data-sim-estado="En camino" class="sim-estado-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-ake-bg border border-ake-line text-[#D1D5DB] hover:border-ake-accent cursor-pointer">
-              En camino
-            </button>
-            <button type="button" data-sim-estado="Entregado" class="sim-estado-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-ake-bg border border-ake-line text-[#D1D5DB] hover:border-ake-accent cursor-pointer">
-              Entregado
-            </button>
+        <!-- ================================================================
+             CHAT EN VIVO MIENTRAS EL PEDIDO ESTÁ ABIERTO
+             ================================================================ -->
+        <div id="orderChatPanel" class="bg-ake-surface rounded-2xl p-4 sm:p-5 border border-ake-line space-y-3.5">
+          <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-ake-line">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <h4 class="font-display text-sm sm:text-base font-bold text-white">
+                Chat del Pedido en Vivo
+              </h4>
+            </div>
+            <span id="chatStatusBadge" class="text-[11px] font-semibold text-emerald-400">
+              ● Canal abierto
+            </span>
           </div>
+
+          <div id="chatMessagesList" class="max-h-56 overflow-y-auto space-y-2.5 pr-1 text-xs">
+            <p class="text-ake-muted text-center py-3">
+              ¿Necesitas agregar una salsa o dar una referencia de tu puerta? Escribe aquí a cocina/reparto.
+            </p>
+          </div>
+
+          <form id="orderChatForm" class="flex items-center gap-2 pt-1">
+            <label for="chatMessageInput" class="sr-only">Escribe un mensaje para el pedido</label>
+            <input id="chatMessageInput" type="text" placeholder="Escribe un mensaje sobre tu pedido..."
+              class="flex-1 text-xs sm:text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent" />
+            <button id="sendChatMessageBtn" type="submit"
+              class="font-display px-4 py-2.5 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-xs font-bold transition cursor-pointer shrink-0">
+              Enviar
+            </button>
+          </form>
         </div>
 
         <div class="pt-1 flex justify-end">
@@ -508,7 +529,7 @@
   </footer>
 
   <!-- ========================================================================
-       SCRIPT MÓDULO ES6: MENÚ + 10 DÍGITOS + DIRECCIÓN + FIRESTORE LIVE STATUS
+       SCRIPT MÓDULO ES6: MENÚ + 10 DÍGITOS + DIRECCIÓN + LIVE STATUS + CHAT
        ======================================================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -517,6 +538,8 @@
       collection,
       addDoc,
       doc,
+      query,
+      orderBy,
       onSnapshot,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -532,6 +555,7 @@
 
     const COLLECTION_PEDIDOS = "ake_pedidos";
     const LOCAL_BACKUP_KEY = "ake_tacos_pedidos_backup";
+    const LOCAL_CHAT_PREFIX = "ake_tacos_chat_";
 
     let db = null;
     try {
@@ -615,6 +639,10 @@
     let activeCategoryFilter = "ALL";
     let capturedLocation = null;
     let unsubscribeOrderStatus = null;
+    let unsubscribeOrderChat = null;
+    let currentActiveOrderKey = null;
+    let currentFirestoreOrderId = null;
+    let isOrderClosed = false;
 
     const formatMoney = (val) =>
       "$" + Number(val || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -847,6 +875,29 @@
       });
     });
 
+    // Estado del chat según el estatus del pedido
+    function setChatAvailability(estadoActual) {
+      const chatInput = document.getElementById("chatMessageInput");
+      const chatBtn = document.getElementById("sendChatMessageBtn");
+      const badge = document.getElementById("chatStatusBadge");
+
+      isOrderClosed = estadoActual === "Entregado";
+
+      if (isOrderClosed) {
+        chatInput.disabled = true;
+        chatBtn.disabled = true;
+        chatInput.placeholder = "Pedido entregado — chat finalizado";
+        badge.textContent = "● Cerrado";
+        badge.className = "text-[11px] font-semibold text-ake-muted";
+      } else {
+        chatInput.disabled = false;
+        chatBtn.disabled = false;
+        chatInput.placeholder = "Escribe un mensaje sobre tu pedido...";
+        badge.textContent = "● Canal abierto";
+        badge.className = "text-[11px] font-semibold text-emerald-400";
+      }
+    }
+
     // Renderizado del estatus en la vista de seguimiento
     const ordenEstados = ["Recibido", "Preparando", "En camino", "Entregado"];
 
@@ -886,12 +937,133 @@
           }
         }
       });
+
+      setChatAvailability(estadoValido);
     }
 
-    document.querySelectorAll(".sim-estado-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        applyOrderStatusView(btn.dataset.simEstado);
+    // ========================================================================
+    // CHAT DEL PEDIDO EN TIEMPO REAL
+    // ========================================================================
+    function renderChatMessages(messages) {
+      const listEl = document.getElementById("chatMessagesList");
+      if (!Array.isArray(messages) || messages.length === 0) {
+        listEl.innerHTML = `
+          <p class="text-ake-muted text-center py-3">
+            ¿Necesitas agregar una salsa o dar una referencia de tu puerta? Escribe aquí a cocina/reparto.
+          </p>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = messages
+        .map((m) => {
+          const isCliente = m.remitente !== "AKE Tacos Cloud";
+          return `
+            <div class="flex ${isCliente ? "justify-end" : "justify-start"}">
+              <div class="max-w-[82%] rounded-2xl px-3.5 py-2.5 border ${
+                isCliente
+                  ? "bg-ake-accent/20 border-ake-accent/40 text-white"
+                  : "bg-ake-bg border-ake-line text-[#E5E7EB]"
+              }">
+                <span class="block text-[10px] font-bold uppercase tracking-wider ${
+                  isCliente ? "text-ake-maiz" : "text-emerald-400"
+                } mb-0.5">
+                  ${escapeHtml(m.remitente || (isCliente ? "Tú" : "AKE Tacos Cloud"))}
+                </span>
+                <p class="text-xs leading-relaxed break-words">${escapeHtml(m.texto || "")}</p>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      listEl.scrollTop = listEl.scrollHeight;
+    }
+
+    function readLocalChat(orderKey) {
+      try {
+        const raw = localStorage.getItem(LOCAL_CHAT_PREFIX + orderKey);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveLocalChatMessage(orderKey, msgObj) {
+      try {
+        const arr = readLocalChat(orderKey);
+        arr.push({ ...msgObj, creadoEn: new Date().toISOString() });
+        localStorage.setItem(LOCAL_CHAT_PREFIX + orderKey, JSON.stringify(arr.slice(-80)));
+      } catch {
+        // Sin acción
+      }
+      renderChatMessages(readLocalChat(orderKey));
+    }
+
+    function subscribeToOrderChat(firestoreDocId, localKey) {
+      if (unsubscribeOrderChat) {
+        unsubscribeOrderChat();
+        unsubscribeOrderChat = null;
+      }
+
+      renderChatMessages(readLocalChat(localKey));
+
+      if (db && firestoreDocId) {
+        const msgsQuery = query(
+          collection(db, COLLECTION_PEDIDOS, firestoreDocId, "mensajes"),
+          orderBy("creadoEn", "asc")
+        );
+        unsubscribeOrderChat = onSnapshot(
+          msgsQuery,
+          (snap) => {
+            const msgs = [];
+            snap.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
+            if (msgs.length > 0) {
+              renderChatMessages(msgs);
+            } else {
+              renderChatMessages(readLocalChat(localKey));
+            }
+          },
+          () => {
+            renderChatMessages(readLocalChat(localKey));
+          }
+        );
+      }
+    }
+
+    document.getElementById("orderChatForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (isOrderClosed || !currentActiveOrderKey) return;
+
+      const inputEl = document.getElementById("chatMessageInput");
+      const texto = inputEl.value.trim();
+      if (!texto) return;
+
+      const clienteNombre = document.getElementById("receiptCliente").textContent || "Cliente";
+      const msgDoc = {
+        remitente: clienteNombre,
+        rol: "cliente",
+        texto,
+        creadoEn: serverTimestamp()
+      };
+
+      inputEl.value = "";
+      saveLocalChatMessage(currentActiveOrderKey, {
+        remitente: clienteNombre,
+        rol: "cliente",
+        texto
       });
+
+      if (db && currentFirestoreOrderId) {
+        try {
+          await addDoc(
+            collection(db, COLLECTION_PEDIDOS, currentFirestoreOrderId, "mensajes"),
+            msgDoc
+          );
+        } catch {
+          // Ya quedó guardado en respaldo local
+        }
+      }
     });
 
     const akePedidoForm = document.getElementById("akePedidoForm");
@@ -993,6 +1165,9 @@
       submitPedidoBtn.disabled = false;
       submitPedidoBtn.innerHTML = `<span>Enviar Pedido a AKE Tacos Cloud</span><span>→</span>`;
 
+      currentFirestoreOrderId = createdDocId;
+      currentActiveOrderKey = createdDocId || folio;
+
       document.getElementById("receiptFolio").textContent = folio;
       document.getElementById("receiptCliente").textContent = clienteNombre;
       document.getElementById("receiptTelefono").textContent = clienteTelefono;
@@ -1038,6 +1213,8 @@
         });
       }
 
+      subscribeToOrderChat(createdDocId, currentActiveOrderKey);
+
       document.getElementById("orderFormWrapper").classList.add("hidden");
       document.getElementById("seguimiento").classList.remove("hidden");
       document.getElementById("seguimiento").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1048,6 +1225,14 @@
         unsubscribeOrderStatus();
         unsubscribeOrderStatus = null;
       }
+      if (unsubscribeOrderChat) {
+        unsubscribeOrderChat();
+        unsubscribeOrderChat = null;
+      }
+      currentActiveOrderKey = null;
+      currentFirestoreOrderId = null;
+      isOrderClosed = false;
+
       orderCart.clear();
       akePedidoForm.reset();
       clearCapturedLocation();
