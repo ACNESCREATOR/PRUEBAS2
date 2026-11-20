@@ -391,7 +391,7 @@
       </div>
 
       <!-- ====================================================================
-           VISTA DE SEGUIMIENTO DEL PEDIDO + CHAT EN VIVO (APARECE TRAS ENVIAR)
+           VISTA DE SEGUIMIENTO DEL PEDIDO + CHAT EN VIVO (PERSISTENTE AL RECARGAR)
            ==================================================================== -->
       <div id="seguimiento" class="hidden max-w-3xl mx-auto bg-ake-panel/95 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-ake-accent/60 shadow-2xl space-y-6">
 
@@ -400,7 +400,7 @@
           <span class="text-lg leading-none mt-0.5" aria-hidden="true">⚠️</span>
           <div class="text-xs sm:text-sm text-amber-100">
             <strong class="font-display font-bold text-amber-300 block">No actualices ni cierres esta página hasta recibir tu pedido.</strong>
-            <span>Aquí verás en tiempo real cuando tu orden pase a <strong>Preparando</strong> o <strong>En camino</strong> y podrás escribirnos por el chat del pedido.</span>
+            <span>Tu seguimiento y chat permanecen activos incluso si recargas esta pestaña; aquí verás cuando tu orden pase a <strong>Preparando</strong> o <strong>En camino</strong>.</span>
           </div>
         </div>
 
@@ -529,7 +529,7 @@
   </footer>
 
   <!-- ========================================================================
-       SCRIPT MÓDULO ES6: MENÚ + 10 DÍGITOS + DIRECCIÓN + LIVE STATUS + CHAT
+       SCRIPT MÓDULO ES6: MENÚ + PERSISTENCIA AL RECARGAR + LIVE STATUS + CHAT
        ======================================================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -556,6 +556,7 @@
     const COLLECTION_PEDIDOS = "ake_pedidos";
     const LOCAL_BACKUP_KEY = "ake_tacos_pedidos_backup";
     const LOCAL_CHAT_PREFIX = "ake_tacos_chat_";
+    const ACTIVE_ORDER_STORAGE_KEY = "ake_tacos_active_order";
 
     let db = null;
     try {
@@ -653,6 +654,31 @@
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
+    }
+
+    function saveActiveOrderSession(sessionObj) {
+      try {
+        localStorage.setItem(ACTIVE_ORDER_STORAGE_KEY, JSON.stringify(sessionObj));
+      } catch {
+        // Sin acción
+      }
+    }
+
+    function readActiveOrderSession() {
+      try {
+        const raw = localStorage.getItem(ACTIVE_ORDER_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function clearActiveOrderSession() {
+      try {
+        localStorage.removeItem(ACTIVE_ORDER_STORAGE_KEY);
+      } catch {
+        // Sin acción
+      }
     }
 
     function renderMenuGrid() {
@@ -938,6 +964,11 @@
         }
       });
 
+      const saved = readActiveOrderSession();
+      if (saved) {
+        saveActiveOrderSession({ ...saved, estado: estadoValido });
+      }
+
       setChatAvailability(estadoValido);
     }
 
@@ -957,7 +988,7 @@
 
       listEl.innerHTML = messages
         .map((m) => {
-          const isCliente = m.remitente !== "AKE Tacos Cloud";
+          const isCliente = m.remitente !== "AKE Tacos Cloud" && m.rol !== "cloud";
           return `
             <div class="flex ${isCliente ? "justify-end" : "justify-start"}">
               <div class="max-w-[82%] rounded-2xl px-3.5 py-2.5 border ${
@@ -1028,6 +1059,70 @@
             renderChatMessages(readLocalChat(localKey));
           }
         );
+      }
+    }
+
+    function attachRealtimeOrderStatus(firestoreDocId) {
+      if (unsubscribeOrderStatus) {
+        unsubscribeOrderStatus();
+        unsubscribeOrderStatus = null;
+      }
+      if (db && firestoreDocId) {
+        unsubscribeOrderStatus = onSnapshot(doc(db, COLLECTION_PEDIDOS, firestoreDocId), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data && data.estado) {
+              applyOrderStatusView(data.estado);
+            }
+          }
+        });
+      }
+    }
+
+    function mountTrackingView(orderData, shouldScroll = true) {
+      const createdDocId = orderData.firestoreDocId || null;
+      const folio = orderData.folio || "AKE-2026-0000";
+
+      currentFirestoreOrderId = createdDocId;
+      currentActiveOrderKey = createdDocId || folio;
+
+      document.getElementById("receiptFolio").textContent = folio;
+      document.getElementById("receiptCliente").textContent = orderData.clienteNombre || "";
+      document.getElementById("receiptTelefono").textContent = orderData.clienteTelefono || "";
+      document.getElementById("receiptEntrega").textContent = orderData.tipoEntrega || "Recoger en local";
+      document.getElementById("receiptDireccion").textContent = orderData.direccion || "";
+      document.getElementById("receiptTotal").textContent = formatMoney(orderData.total || 0);
+
+      const receiptUbicacionRow = document.getElementById("receiptUbicacionRow");
+      const receiptMapsAnchor = document.getElementById("receiptMapsAnchor");
+      if (orderData.mapsUrl) {
+        receiptMapsAnchor.href = orderData.mapsUrl;
+        receiptMapsAnchor.textContent = `Ver ubicación GPS: ${orderData.mapsUrl}`;
+        receiptUbicacionRow.classList.remove("hidden");
+      } else {
+        receiptUbicacionRow.classList.add("hidden");
+      }
+
+      const items = Array.isArray(orderData.items) ? orderData.items : [];
+      document.getElementById("receiptItemsBreakdown").innerHTML = items
+        .map(
+          (i) =>
+            `<div class="flex justify-between text-[#E5E7EB]">
+               <span>${Number(i.cantidad || 1)}x ${escapeHtml(i.nombre)}</span>
+               <strong class="text-white">${formatMoney(i.subtotal ?? (i.precio * i.cantidad))}</strong>
+             </div>`
+        )
+        .join("");
+
+      applyOrderStatusView(orderData.estado || "Recibido");
+      attachRealtimeOrderStatus(createdDocId);
+      subscribeToOrderChat(createdDocId, currentActiveOrderKey);
+
+      document.getElementById("orderFormWrapper").classList.add("hidden");
+      document.getElementById("seguimiento").classList.remove("hidden");
+
+      if (shouldScroll) {
+        document.getElementById("seguimiento").scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
 
@@ -1165,59 +1260,21 @@
       submitPedidoBtn.disabled = false;
       submitPedidoBtn.innerHTML = `<span>Enviar Pedido a AKE Tacos Cloud</span><span>→</span>`;
 
-      currentFirestoreOrderId = createdDocId;
-      currentActiveOrderKey = createdDocId || folio;
+      const sessionSnapshot = {
+        folio,
+        firestoreDocId: createdDocId,
+        clienteNombre,
+        clienteTelefono,
+        tipoEntrega,
+        direccion,
+        mapsUrl: capturedLocation ? capturedLocation.mapsUrl : "",
+        items,
+        total,
+        estado: "Recibido"
+      };
 
-      document.getElementById("receiptFolio").textContent = folio;
-      document.getElementById("receiptCliente").textContent = clienteNombre;
-      document.getElementById("receiptTelefono").textContent = clienteTelefono;
-      document.getElementById("receiptEntrega").textContent = tipoEntrega;
-      document.getElementById("receiptDireccion").textContent = direccion;
-      document.getElementById("receiptTotal").textContent = formatMoney(total);
-
-      const receiptUbicacionRow = document.getElementById("receiptUbicacionRow");
-      const receiptMapsAnchor = document.getElementById("receiptMapsAnchor");
-      if (capturedLocation && capturedLocation.mapsUrl) {
-        receiptMapsAnchor.href = capturedLocation.mapsUrl;
-        receiptMapsAnchor.textContent = `Ver ubicación GPS: ${capturedLocation.mapsUrl}`;
-        receiptUbicacionRow.classList.remove("hidden");
-      } else {
-        receiptUbicacionRow.classList.add("hidden");
-      }
-
-      document.getElementById("receiptItemsBreakdown").innerHTML = items
-        .map(
-          (i) =>
-            `<div class="flex justify-between text-[#E5E7EB]">
-               <span>${i.cantidad}x ${escapeHtml(i.nombre)}</span>
-               <strong class="text-white">${formatMoney(i.subtotal)}</strong>
-             </div>`
-        )
-        .join("");
-
-      applyOrderStatusView("Recibido");
-
-      // Escucha en tiempo real cambios de estatus desde AKE Tacos Cloud
-      if (unsubscribeOrderStatus) {
-        unsubscribeOrderStatus();
-        unsubscribeOrderStatus = null;
-      }
-      if (db && createdDocId) {
-        unsubscribeOrderStatus = onSnapshot(doc(db, COLLECTION_PEDIDOS, createdDocId), (snap) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data && data.estado) {
-              applyOrderStatusView(data.estado);
-            }
-          }
-        });
-      }
-
-      subscribeToOrderChat(createdDocId, currentActiveOrderKey);
-
-      document.getElementById("orderFormWrapper").classList.add("hidden");
-      document.getElementById("seguimiento").classList.remove("hidden");
-      document.getElementById("seguimiento").scrollIntoView({ behavior: "smooth", block: "start" });
+      saveActiveOrderSession(sessionSnapshot);
+      mountTrackingView(sessionSnapshot, true);
     });
 
     document.getElementById("newOrderResetBtn").addEventListener("click", () => {
@@ -1229,6 +1286,7 @@
         unsubscribeOrderChat();
         unsubscribeOrderChat = null;
       }
+      clearActiveOrderSession();
       currentActiveOrderKey = null;
       currentFirestoreOrderId = null;
       isOrderClosed = false;
@@ -1246,6 +1304,12 @@
 
     renderMenuGrid();
     renderOrderSummary();
+
+    // Restaurar automáticamente si el usuario recargó la página con un pedido activo
+    const restoredSession = readActiveOrderSession();
+    if (restoredSession && restoredSession.folio) {
+      mountTrackingView(restoredSession, false);
+    }
   </script>
 </body>
 </html>
