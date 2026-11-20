@@ -153,7 +153,7 @@
           </h1>
 
           <p class="text-sm sm:text-base text-[#D1D5DB] max-w-xl leading-relaxed">
-            Elige tus platillos en el menú, ajusta cantidades con un clic y envía tu orden completa a <strong class="text-white">AKE Tacos Cloud</strong> sin llamadas ni esperas innecesarias.
+            Elige tus platillos en el menú, ajusta cantidades con un clic y envía tu orden completa a <strong class="text-white">AKE Tacos Cloud</strong> con seguimiento en vivo de tu pedido.
           </p>
 
           <div class="pt-1 flex flex-wrap items-center gap-3.5">
@@ -189,16 +189,16 @@
             <div class="flex items-start gap-3">
               <span class="font-display w-6 h-6 rounded-lg bg-ake-accentSoft text-ake-accent text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
               <div>
-                <p class="font-display font-semibold text-white">Elige local o envío con ubicación</p>
-                <p class="text-xs text-ake-muted">Comparte tu ubicación GPS en un clic y agrega tus salsas.</p>
+                <p class="font-display font-semibold text-white">Dirección y teléfono a 10 dígitos</p>
+                <p class="text-xs text-ake-muted">Captura tu dirección, adjunta ubicación GPS y notas de salsas.</p>
               </div>
             </div>
 
             <div class="flex items-start gap-3">
               <span class="font-display w-6 h-6 rounded-lg bg-ake-accentSoft text-ake-accent text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
               <div>
-                <p class="font-display font-semibold text-white">Recibe tu folio al instante</p>
-                <p class="text-xs text-ake-muted">Tu pedido viaja directo a la cola de preparación.</p>
+                <p class="font-display font-semibold text-white">Sigue tu orden paso a paso</p>
+                <p class="text-xs text-ake-muted">Consulta actualizaciones: Recibido, Preparando y En camino.</p>
               </div>
             </div>
           </div>
@@ -249,11 +249,11 @@
     </section>
 
     <!-- ========================================================================
-         4. FORMULARIO DE PEDIDOS CONECTADO AL MENÚ -> AKE TACOS CLOUD
+         4. FORMULARIO DE PEDIDOS + PÁGINA/VISTA DE ACTUALIZACIÓN DE ESTADO
          ======================================================================== -->
     <section id="pedido" class="max-w-6xl mx-auto px-4 sm:px-8 py-14 scroll-mt-20">
 
-      <div class="pb-6 mb-8 border-b border-ake-line">
+      <div id="pedidoSectionHeader" class="pb-6 mb-8 border-b border-ake-line">
         <span class="font-display text-xs font-semibold tracking-[0.18em] uppercase text-ake-accent">
           Formulario de Pedidos
         </span>
@@ -311,9 +311,9 @@
 
             <div>
               <label for="clienteTelefonoInput" class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB] mb-1.5">
-                Teléfono / WhatsApp *
+                Teléfono (10 dígitos) *
               </label>
-              <input id="clienteTelefonoInput" type="tel" required placeholder="Ej. 55 9876 5432"
+              <input id="clienteTelefonoInput" type="tel" inputmode="numeric" maxlength="10" required placeholder="Ej. 5512345678"
                 class="w-full text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent" />
             </div>
           </div>
@@ -338,20 +338,20 @@
             </div>
           </div>
 
-          <!-- Dirección + Botón de Ubicación GPS -->
+          <!-- Dirección Obligatoria + Botón de Ubicación GPS -->
           <div id="direccionEntregaGroup" class="space-y-2.5">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <label for="direccionEntregaInput" class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB]">
-                Dirección o Ubicación de Entrega
+                Dirección de Entrega *
               </label>
               <button type="button" id="btnObtenerUbicacion"
                 class="font-display inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ake-accentSoft hover:bg-ake-accent text-ake-accent hover:text-white border border-ake-accent/40 text-[11px] font-semibold transition cursor-pointer">
                 <span>📍</span>
-                <span id="btnUbicacionLabel">Usar mi ubicación actual</span>
+                <span id="btnUbicacionLabel">Adjuntar ubicación GPS</span>
               </button>
             </div>
 
-            <input id="direccionEntregaInput" type="text" placeholder="Calle, número, colonia o referencias (o usa el botón GPS)"
+            <input id="direccionEntregaInput" type="text" required placeholder="Calle, número exterior/interior, colonia y referencias *"
               class="w-full text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent" />
 
             <!-- Tarjeta de confirmación cuando se captura ubicación GPS -->
@@ -390,31 +390,67 @@
 
       </div>
 
-      <!-- VISTA COMPROBANTE TRAS ENVIAR -->
-      <div id="orderReceiptWrapper" class="hidden max-w-2xl mx-auto bg-ake-panel/95 rounded-2xl p-6 sm:p-8 border border-ake-accent/60 shadow-2xl space-y-5">
+      <!-- ====================================================================
+           VISTA DE SEGUIMIENTO DEL PEDIDO (APARECE TRAS ENVIAR)
+           ==================================================================== -->
+      <div id="seguimiento" class="hidden max-w-3xl mx-auto bg-ake-panel/95 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-ake-accent/60 shadow-2xl space-y-6">
+
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-ake-line">
           <div>
             <span class="font-display text-xs font-semibold uppercase tracking-widest text-ake-accent">
-              ✓ Pedido Enviado a AKE Tacos Cloud
+              Estado de tu Pedido · AKE Tacos Cloud
             </span>
             <h3 class="font-display text-2xl sm:text-3xl font-bold text-white mt-1">
               Folio: <span id="receiptFolio" class="text-ake-accent">AKE-2026-0000</span>
             </h3>
           </div>
-          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-ake-accentSoft text-ake-accent border border-ake-accent/35 self-start sm:self-auto">
+          <span id="estadoBadgePill" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-ake-accentSoft text-ake-accent border border-ake-accent/40 self-start sm:self-auto">
             ● Recibido
           </span>
         </div>
 
-        <p class="text-sm text-ake-muted leading-relaxed">
-          Tu orden ya quedó registrada para <strong class="text-white" id="receiptCliente"></strong> (<span id="receiptEntrega"></span>).
-        </p>
-
-        <div id="receiptUbicacionRow" class="hidden bg-ake-bg rounded-xl p-3.5 border border-ake-line text-xs">
-          <span class="text-ake-muted block mb-1">Ubicación compartida:</span>
-          <a id="receiptMapsAnchor" href="#" target="_blank" rel="noopener noreferrer" class="text-emerald-400 font-semibold underline break-all"></a>
+        <!-- Mensaje dinámico del estatus actual -->
+        <div id="estadoMensajeBox" class="bg-ake-bg rounded-xl p-4 border border-ake-line">
+          <p id="estadoTituloTexto" class="font-display text-base font-bold text-white">Pedido recibido en cocina</p>
+          <p id="estadoDescripcionTexto" class="text-xs sm:text-sm text-ake-muted mt-1">
+            Hemos registrado tu orden. En cuanto comience la preparación en el trompo te avisaremos aquí mismo.
+          </p>
         </div>
 
+        <!-- Línea de etapas: Recibido -> Preparando -> En camino -> Entregado -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="statusStepsGrid">
+          <div data-step-estado="Recibido" class="status-step-card rounded-xl p-3 border border-ake-accent bg-ake-accentSoft">
+            <span class="block font-display text-xs font-bold text-white">1. Recibido</span>
+            <span class="block text-[11px] text-[#E5E7EB] mt-0.5">Orden confirmada</span>
+          </div>
+          <div data-step-estado="Preparando" class="status-step-card rounded-xl p-3 border border-ake-line bg-ake-bg">
+            <span class="block font-display text-xs font-bold text-ake-muted">2. Preparando</span>
+            <span class="block text-[11px] text-ake-muted mt-0.5">En trompo y plancha</span>
+          </div>
+          <div data-step-estado="En camino" class="status-step-card rounded-xl p-3 border border-ake-line bg-ake-bg">
+            <span class="block font-display text-xs font-bold text-ake-muted">3. En camino</span>
+            <span class="block text-[11px] text-ake-muted mt-0.5">Repartidor / listo</span>
+          </div>
+          <div data-step-estado="Entregado" class="status-step-card rounded-xl p-3 border border-ake-line bg-ake-bg">
+            <span class="block font-display text-xs font-bold text-ake-muted">4. Entregado</span>
+            <span class="block text-[11px] text-ake-muted mt-0.5">¡A disfrutar!</span>
+          </div>
+        </div>
+
+        <!-- Datos de entrega y dirección -->
+        <div class="bg-ake-bg rounded-xl p-4 border border-ake-line space-y-2 text-xs sm:text-sm">
+          <p class="text-[#D1D5DB]">
+            <strong class="text-white">Cliente:</strong> <span id="receiptCliente"></span> · <span id="receiptTelefono"></span>
+          </p>
+          <p class="text-[#D1D5DB]">
+            <strong class="text-white">Entrega (<span id="receiptEntrega"></span>):</strong> <span id="receiptDireccion"></span>
+          </p>
+          <div id="receiptUbicacionRow" class="hidden pt-1">
+            <a id="receiptMapsAnchor" href="#" target="_blank" rel="noopener noreferrer" class="text-emerald-400 font-semibold underline break-all"></a>
+          </div>
+        </div>
+
+        <!-- Detalle de platillos -->
         <div id="receiptItemsBreakdown" class="bg-ake-bg rounded-xl p-4 border border-ake-line space-y-2 text-xs"></div>
 
         <div class="flex items-center justify-between pt-2 border-t border-ake-line font-display">
@@ -422,7 +458,28 @@
           <span id="receiptTotal" class="text-xl font-extrabold text-ake-accent">$0.00</span>
         </div>
 
-        <div class="pt-2 flex justify-end">
+        <!-- Controles de prueba rápida para simular el cambio de estatus desde AKE Tacos Cloud -->
+        <div class="bg-ake-surface rounded-xl p-4 border border-ake-line space-y-2.5">
+          <span class="block font-display text-[11px] font-semibold uppercase tracking-wider text-ake-maiz">
+            Vista previa de estatus (mismas opciones que en AKE Tacos Cloud)
+          </span>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" data-sim-estado="Recibido" class="sim-estado-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-ake-bg border border-ake-line text-[#D1D5DB] hover:border-ake-accent cursor-pointer">
+              Recibido
+            </button>
+            <button type="button" data-sim-estado="Preparando" class="sim-estado-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-ake-bg border border-ake-line text-[#D1D5DB] hover:border-ake-accent cursor-pointer">
+              Preparando
+            </button>
+            <button type="button" data-sim-estado="En camino" class="sim-estado-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-ake-bg border border-ake-line text-[#D1D5DB] hover:border-ake-accent cursor-pointer">
+              En camino
+            </button>
+            <button type="button" data-sim-estado="Entregado" class="sim-estado-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-ake-bg border border-ake-line text-[#D1D5DB] hover:border-ake-accent cursor-pointer">
+              Entregado
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-1 flex justify-end">
           <button type="button" id="newOrderResetBtn"
             class="font-display px-5 py-2.5 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-xs font-semibold transition cursor-pointer">
             + Hacer otro pedido
@@ -451,7 +508,7 @@
   </footer>
 
   <!-- ========================================================================
-       SCRIPT MÓDULO ES6: MENÚ + UBICACIÓN GPS + FORMULARIO + FIRESTORE
+       SCRIPT MÓDULO ES6: MENÚ + 10 DÍGITOS + DIRECCIÓN + FIRESTORE LIVE STATUS
        ======================================================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -459,6 +516,8 @@
       getFirestore,
       collection,
       addDoc,
+      doc,
+      onSnapshot,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -533,9 +592,29 @@
       }
     ];
 
+    const ESTADOS_CONFIG = {
+      Recibido: {
+        titulo: "Pedido recibido en cocina",
+        descripcion: "Tu orden ya ingresó a AKE Tacos Cloud. Pronto comenzará su preparación."
+      },
+      Preparando: {
+        titulo: "Tu pedido se está preparando",
+        descripcion: "Estamos cortando al trompo, dorando y armando tus platillos al momento."
+      },
+      "En camino": {
+        titulo: "Tu pedido va en camino / listo para entrega",
+        descripcion: "Ya salió de cocina rumbo a tu ubicación o está listo para recoger en local."
+      },
+      Entregado: {
+        titulo: "¡Pedido entregado!",
+        descripcion: "Gracias por ordenar en AKE Tacos. ¡Buen provecho!"
+      }
+    };
+
     const orderCart = new Map();
     let activeCategoryFilter = "ALL";
-    let capturedLocation = null; // { lat, lng, mapsUrl, accuracy }
+    let capturedLocation = null;
+    let unsubscribeOrderStatus = null;
 
     const formatMoney = (val) =>
       "$" + Number(val || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -689,9 +768,13 @@
       });
     }
 
-    // ==========================================================================
-    // GEOLOCALIZACIÓN GPS -> ENLACE GOOGLE MAPS
-    // ==========================================================================
+    // Restringir teléfono a solo dígitos (máximo 10)
+    const clienteTelefonoInput = document.getElementById("clienteTelefonoInput");
+    clienteTelefonoInput.addEventListener("input", () => {
+      clienteTelefonoInput.value = clienteTelefonoInput.value.replace(/\D/g, "").slice(0, 10);
+    });
+
+    // Geolocalización GPS -> enlace Google Maps
     const btnObtenerUbicacion = document.getElementById("btnObtenerUbicacion");
     const btnUbicacionLabel = document.getElementById("btnUbicacionLabel");
     const ubicacionCapturadaBox = document.getElementById("ubicacionCapturadaBox");
@@ -702,13 +785,13 @@
       capturedLocation = null;
       ubicacionCapturadaBox.classList.add("hidden");
       ubicacionMapsLink.href = "#";
-      btnUbicacionLabel.textContent = "Usar mi ubicación actual";
+      btnUbicacionLabel.textContent = "Adjuntar ubicación GPS";
     }
 
     btnObtenerUbicacion.addEventListener("click", () => {
       hidePedidoError();
       if (!("geolocation" in navigator)) {
-        showPedidoError("Tu navegador no soporta ubicación GPS. Escribe tu dirección manualmente.");
+        showPedidoError("Tu navegador no soporta ubicación GPS. Escribe tu dirección completa.");
         return;
       }
 
@@ -732,20 +815,16 @@
           ubicacionMapsLink.textContent = `https://maps.google.com/?q=${lat},${lng}`;
           ubicacionCapturadaBox.classList.remove("hidden");
 
-          // Si eligió ubicación GPS, marcamos automáticamente "Envío a domicilio" si estaba vacío
-          const domicilioRadio = document.querySelector('input[name="tipoEntrega"][value="Envío a domicilio"]');
-          if (domicilioRadio) domicilioRadio.checked = true;
-
           btnObtenerUbicacion.disabled = false;
           btnUbicacionLabel.textContent = "Actualizar ubicación GPS";
         },
         (err) => {
           btnObtenerUbicacion.disabled = false;
-          btnUbicacionLabel.textContent = "Usar mi ubicación actual";
+          btnUbicacionLabel.textContent = "Adjuntar ubicación GPS";
           if (err.code === 1) {
-            showPedidoError("Permiso de ubicación denegado. Actívalo en tu navegador o escribe tu dirección.");
+            showPedidoError("Permiso de ubicación denegado. Asegúrate de escribir tu dirección completa.");
           } else {
-            showPedidoError("No se pudo obtener tu ubicación exacta. Puedes escribir tu dirección manualmente.");
+            showPedidoError("No se pudo obtener tu ubicación GPS. Asegúrate de escribir tu dirección completa.");
           }
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -765,6 +844,53 @@
         btn.classList.remove("bg-ake-panel/90", "text-[#D1D5DB]", "border", "border-ake-line", "font-medium");
         btn.classList.add("bg-ake-accent", "text-white", "font-semibold");
         renderMenuGrid();
+      });
+    });
+
+    // Renderizado del estatus en la vista de seguimiento
+    const ordenEstados = ["Recibido", "Preparando", "En camino", "Entregado"];
+
+    function applyOrderStatusView(estadoActual) {
+      const estadoValido = ESTADOS_CONFIG[estadoActual] ? estadoActual : "Recibido";
+      const cfg = ESTADOS_CONFIG[estadoValido];
+      const activeIdx = ordenEstados.indexOf(estadoValido);
+
+      document.getElementById("estadoBadgePill").textContent = `● ${estadoValido}`;
+      document.getElementById("estadoTituloTexto").textContent = cfg.titulo;
+      document.getElementById("estadoDescripcionTexto").textContent = cfg.descripcion;
+
+      document.querySelectorAll(".status-step-card").forEach((card, idx) => {
+        const titleEl = card.querySelector("span:first-child");
+        const subEl = card.querySelector("span:last-child");
+        if (idx <= activeIdx) {
+          card.classList.remove("border-ake-line", "bg-ake-bg");
+          card.classList.add("border-ake-accent", "bg-ake-accentSoft");
+          if (titleEl) {
+            titleEl.classList.remove("text-ake-muted");
+            titleEl.classList.add("text-white");
+          }
+          if (subEl) {
+            subEl.classList.remove("text-ake-muted");
+            subEl.classList.add("text-[#E5E7EB]");
+          }
+        } else {
+          card.classList.remove("border-ake-accent", "bg-ake-accentSoft");
+          card.classList.add("border-ake-line", "bg-ake-bg");
+          if (titleEl) {
+            titleEl.classList.remove("text-white");
+            titleEl.classList.add("text-ake-muted");
+          }
+          if (subEl) {
+            subEl.classList.remove("text-[#E5E7EB]");
+            subEl.classList.add("text-ake-muted");
+          }
+        }
+      });
+    }
+
+    document.querySelectorAll(".sim-estado-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        applyOrderStatusView(btn.dataset.simEstado);
       });
     });
 
@@ -812,19 +938,24 @@
       }
 
       const clienteNombre = document.getElementById("clienteNombreInput").value.trim();
-      const clienteTelefono = document.getElementById("clienteTelefonoInput").value.trim();
+      const clienteTelefono = clienteTelefonoInput.value.replace(/\D/g, "");
       const entregaEl = document.querySelector('input[name="tipoEntrega"]:checked');
       const tipoEntrega = entregaEl ? entregaEl.value : "Recoger en local";
       const direccion = document.getElementById("direccionEntregaInput").value.trim();
       const notas = document.getElementById("notasPedidoInput").value.trim();
 
-      if (!clienteNombre || !clienteTelefono) {
-        showPedidoError("Por favor ingresa tu nombre y teléfono/WhatsApp.");
+      if (!clienteNombre) {
+        showPedidoError("Por favor ingresa tu nombre.");
         return;
       }
 
-      if (tipoEntrega === "Envío a domicilio" && !direccion && !capturedLocation) {
-        showPedidoError("Escribe tu dirección o presiona 'Usar mi ubicación actual' para el envío a domicilio.");
+      if (clienteTelefono.length !== 10) {
+        showPedidoError("El número de teléfono debe tener exactamente 10 dígitos.");
+        return;
+      }
+
+      if (!direccion) {
+        showPedidoError("La dirección de entrega es obligatoria. Escríbela antes de enviar el pedido.");
         return;
       }
 
@@ -850,9 +981,11 @@
       submitPedidoBtn.disabled = true;
       submitPedidoBtn.innerHTML = `<span>Enviando pedido...</span>`;
 
+      let createdDocId = null;
       try {
         if (!db) throw new Error("Firestore no inicializado");
-        await addDoc(collection(db, COLLECTION_PEDIDOS), pedidoDoc);
+        const docRef = await addDoc(collection(db, COLLECTION_PEDIDOS), pedidoDoc);
+        createdDocId = docRef.id;
       } catch {
         saveBackupOrder({ ...pedidoDoc, fechaCreacion: new Date().toISOString() });
       }
@@ -862,14 +995,16 @@
 
       document.getElementById("receiptFolio").textContent = folio;
       document.getElementById("receiptCliente").textContent = clienteNombre;
+      document.getElementById("receiptTelefono").textContent = clienteTelefono;
       document.getElementById("receiptEntrega").textContent = tipoEntrega;
+      document.getElementById("receiptDireccion").textContent = direccion;
       document.getElementById("receiptTotal").textContent = formatMoney(total);
 
       const receiptUbicacionRow = document.getElementById("receiptUbicacionRow");
       const receiptMapsAnchor = document.getElementById("receiptMapsAnchor");
       if (capturedLocation && capturedLocation.mapsUrl) {
         receiptMapsAnchor.href = capturedLocation.mapsUrl;
-        receiptMapsAnchor.textContent = capturedLocation.mapsUrl;
+        receiptMapsAnchor.textContent = `Ver ubicación GPS: ${capturedLocation.mapsUrl}`;
         receiptUbicacionRow.classList.remove("hidden");
       } else {
         receiptUbicacionRow.classList.add("hidden");
@@ -885,20 +1020,43 @@
         )
         .join("");
 
+      applyOrderStatusView("Recibido");
+
+      // Escucha en tiempo real cambios de estatus desde AKE Tacos Cloud
+      if (unsubscribeOrderStatus) {
+        unsubscribeOrderStatus();
+        unsubscribeOrderStatus = null;
+      }
+      if (db && createdDocId) {
+        unsubscribeOrderStatus = onSnapshot(doc(db, COLLECTION_PEDIDOS, createdDocId), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data && data.estado) {
+              applyOrderStatusView(data.estado);
+            }
+          }
+        });
+      }
+
       document.getElementById("orderFormWrapper").classList.add("hidden");
-      document.getElementById("orderReceiptWrapper").classList.remove("hidden");
-      document.getElementById("pedido").scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("seguimiento").classList.remove("hidden");
+      document.getElementById("seguimiento").scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     document.getElementById("newOrderResetBtn").addEventListener("click", () => {
+      if (unsubscribeOrderStatus) {
+        unsubscribeOrderStatus();
+        unsubscribeOrderStatus = null;
+      }
       orderCart.clear();
       akePedidoForm.reset();
       clearCapturedLocation();
       hidePedidoError();
       renderMenuGrid();
       renderOrderSummary();
-      document.getElementById("orderReceiptWrapper").classList.add("hidden");
+      document.getElementById("seguimiento").classList.add("hidden");
       document.getElementById("orderFormWrapper").classList.remove("hidden");
+      document.getElementById("pedido").scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     renderMenuGrid();
