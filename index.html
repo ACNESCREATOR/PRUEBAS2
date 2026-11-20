@@ -189,8 +189,8 @@
             <div class="flex items-start gap-3">
               <span class="font-display w-6 h-6 rounded-lg bg-ake-accentSoft text-ake-accent text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
               <div>
-                <p class="font-display font-semibold text-white">Elige local o envío</p>
-                <p class="text-xs text-ake-muted">Agrega tus salsas, notas especiales y datos de entrega.</p>
+                <p class="font-display font-semibold text-white">Elige local o envío con ubicación</p>
+                <p class="text-xs text-ake-muted">Comparte tu ubicación GPS en un clic y agrega tus salsas.</p>
               </div>
             </div>
 
@@ -293,7 +293,7 @@
           </div>
         </div>
 
-        <!-- Columna Derecha: Datos de Entrega y Envío a Firestore (6 cols) -->
+        <!-- Columna Derecha: Datos de Entrega, Ubicación GPS y Envío a Firestore (6 cols) -->
         <form id="akePedidoForm" novalidate class="lg:col-span-6 bg-ake-panel/95 backdrop-blur-sm rounded-2xl p-6 sm:p-7 border border-ake-line space-y-5">
 
           <h3 class="font-display text-xl font-bold text-white pb-2 border-b border-ake-line">
@@ -338,12 +338,36 @@
             </div>
           </div>
 
-          <div id="direccionEntregaGroup">
-            <label for="direccionEntregaInput" class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB] mb-1.5">
-              Dirección / Referencias (si aplica)
-            </label>
-            <input id="direccionEntregaInput" type="text" placeholder="Calle, número, colonia y referencias"
+          <!-- Dirección + Botón de Ubicación GPS -->
+          <div id="direccionEntregaGroup" class="space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label for="direccionEntregaInput" class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB]">
+                Dirección o Ubicación de Entrega
+              </label>
+              <button type="button" id="btnObtenerUbicacion"
+                class="font-display inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ake-accentSoft hover:bg-ake-accent text-ake-accent hover:text-white border border-ake-accent/40 text-[11px] font-semibold transition cursor-pointer">
+                <span>📍</span>
+                <span id="btnUbicacionLabel">Usar mi ubicación actual</span>
+              </button>
+            </div>
+
+            <input id="direccionEntregaInput" type="text" placeholder="Calle, número, colonia o referencias (o usa el botón GPS)"
               class="w-full text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent" />
+
+            <!-- Tarjeta de confirmación cuando se captura ubicación GPS -->
+            <div id="ubicacionCapturadaBox" class="hidden flex items-center justify-between gap-2 bg-ake-bg border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-xs">
+              <div class="min-w-0">
+                <span class="font-display font-semibold text-emerald-400 block">✓ Ubicación GPS adjuntada al pedido</span>
+                <a id="ubicacionMapsLink" href="#" target="_blank" rel="noopener noreferrer"
+                  class="text-[#D1D5DB] hover:text-white underline truncate block mt-0.5">
+                  Ver punto exacto en Google Maps
+                </a>
+              </div>
+              <button type="button" id="btnQuitarUbicacion" title="Quitar ubicación GPS"
+                class="px-2 py-1 rounded-lg bg-ake-panel hover:bg-ake-line text-ake-muted hover:text-white text-xs font-bold cursor-pointer shrink-0">
+                ✕
+              </button>
+            </div>
           </div>
 
           <div>
@@ -386,6 +410,11 @@
           Tu orden ya quedó registrada para <strong class="text-white" id="receiptCliente"></strong> (<span id="receiptEntrega"></span>).
         </p>
 
+        <div id="receiptUbicacionRow" class="hidden bg-ake-bg rounded-xl p-3.5 border border-ake-line text-xs">
+          <span class="text-ake-muted block mb-1">Ubicación compartida:</span>
+          <a id="receiptMapsAnchor" href="#" target="_blank" rel="noopener noreferrer" class="text-emerald-400 font-semibold underline break-all"></a>
+        </div>
+
         <div id="receiptItemsBreakdown" class="bg-ake-bg rounded-xl p-4 border border-ake-line space-y-2 text-xs"></div>
 
         <div class="flex items-center justify-between pt-2 border-t border-ake-line font-display">
@@ -422,7 +451,7 @@
   </footer>
 
   <!-- ========================================================================
-       SCRIPT MÓDULO ES6: MENÚ + FORMULARIO + FIRESTORE ("ake_pedidos")
+       SCRIPT MÓDULO ES6: MENÚ + UBICACIÓN GPS + FORMULARIO + FIRESTORE
        ======================================================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -506,6 +535,7 @@
 
     const orderCart = new Map();
     let activeCategoryFilter = "ALL";
+    let capturedLocation = null; // { lat, lng, mapsUrl, accuracy }
 
     const formatMoney = (val) =>
       "$" + Number(val || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -659,6 +689,72 @@
       });
     }
 
+    // ==========================================================================
+    // GEOLOCALIZACIÓN GPS -> ENLACE GOOGLE MAPS
+    // ==========================================================================
+    const btnObtenerUbicacion = document.getElementById("btnObtenerUbicacion");
+    const btnUbicacionLabel = document.getElementById("btnUbicacionLabel");
+    const ubicacionCapturadaBox = document.getElementById("ubicacionCapturadaBox");
+    const ubicacionMapsLink = document.getElementById("ubicacionMapsLink");
+    const btnQuitarUbicacion = document.getElementById("btnQuitarUbicacion");
+
+    function clearCapturedLocation() {
+      capturedLocation = null;
+      ubicacionCapturadaBox.classList.add("hidden");
+      ubicacionMapsLink.href = "#";
+      btnUbicacionLabel.textContent = "Usar mi ubicación actual";
+    }
+
+    btnObtenerUbicacion.addEventListener("click", () => {
+      hidePedidoError();
+      if (!("geolocation" in navigator)) {
+        showPedidoError("Tu navegador no soporta ubicación GPS. Escribe tu dirección manualmente.");
+        return;
+      }
+
+      btnObtenerUbicacion.disabled = true;
+      btnUbicacionLabel.textContent = "Obteniendo GPS...";
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(6));
+          const lng = Number(pos.coords.longitude.toFixed(6));
+          const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+
+          capturedLocation = {
+            lat,
+            lng,
+            mapsUrl,
+            accuracy: Math.round(pos.coords.accuracy || 0)
+          };
+
+          ubicacionMapsLink.href = mapsUrl;
+          ubicacionMapsLink.textContent = `https://maps.google.com/?q=${lat},${lng}`;
+          ubicacionCapturadaBox.classList.remove("hidden");
+
+          // Si eligió ubicación GPS, marcamos automáticamente "Envío a domicilio" si estaba vacío
+          const domicilioRadio = document.querySelector('input[name="tipoEntrega"][value="Envío a domicilio"]');
+          if (domicilioRadio) domicilioRadio.checked = true;
+
+          btnObtenerUbicacion.disabled = false;
+          btnUbicacionLabel.textContent = "Actualizar ubicación GPS";
+        },
+        (err) => {
+          btnObtenerUbicacion.disabled = false;
+          btnUbicacionLabel.textContent = "Usar mi ubicación actual";
+          if (err.code === 1) {
+            showPedidoError("Permiso de ubicación denegado. Actívalo en tu navegador o escribe tu dirección.");
+          } else {
+            showPedidoError("No se pudo obtener tu ubicación exacta. Puedes escribir tu dirección manualmente.");
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+
+    btnQuitarUbicacion.addEventListener("click", clearCapturedLocation);
+
+    // Filtros del menú
     document.querySelectorAll(".menu-filter-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         activeCategoryFilter = btn.dataset.menuFilter;
@@ -727,8 +823,8 @@
         return;
       }
 
-      if (tipoEntrega === "Envío a domicilio" && !direccion) {
-        showPedidoError("Indica tu dirección o referencias para el envío a domicilio.");
+      if (tipoEntrega === "Envío a domicilio" && !direccion && !capturedLocation) {
+        showPedidoError("Escribe tu dirección o presiona 'Usar mi ubicación actual' para el envío a domicilio.");
         return;
       }
 
@@ -742,6 +838,8 @@
         clienteTelefono,
         tipoEntrega,
         direccion,
+        ubicacionGps: capturedLocation || null,
+        mapsUrl: capturedLocation ? capturedLocation.mapsUrl : "",
         notas,
         items,
         total,
@@ -766,6 +864,17 @@
       document.getElementById("receiptCliente").textContent = clienteNombre;
       document.getElementById("receiptEntrega").textContent = tipoEntrega;
       document.getElementById("receiptTotal").textContent = formatMoney(total);
+
+      const receiptUbicacionRow = document.getElementById("receiptUbicacionRow");
+      const receiptMapsAnchor = document.getElementById("receiptMapsAnchor");
+      if (capturedLocation && capturedLocation.mapsUrl) {
+        receiptMapsAnchor.href = capturedLocation.mapsUrl;
+        receiptMapsAnchor.textContent = capturedLocation.mapsUrl;
+        receiptUbicacionRow.classList.remove("hidden");
+      } else {
+        receiptUbicacionRow.classList.add("hidden");
+      }
+
       document.getElementById("receiptItemsBreakdown").innerHTML = items
         .map(
           (i) =>
@@ -784,6 +893,7 @@
     document.getElementById("newOrderResetBtn").addEventListener("click", () => {
       orderCart.clear();
       akePedidoForm.reset();
+      clearCapturedLocation();
       hidePedidoError();
       renderMenuGrid();
       renderOrderSummary();
