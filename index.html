@@ -55,7 +55,7 @@
     .ake-pastor-bg {
       background-image:
         linear-gradient(180deg, rgba(7, 7, 9, 0.78) 0%, rgba(7, 7, 9, 0.90) 45%, rgba(7, 7, 9, 0.96) 100%),
-        radial-gradient(circle at 50% 10%, rgba(225, 29, 46, 0.22), transparent 55%),
+        radial-gradient(circle at 20% 15%, rgba(225, 29, 46, 0.22), transparent 55%),
         url("https://cdn.milenio.com/uploads/media/2019/07/24/trompo-pastor-inspirado-trompo-mexicano.jpg");
       background-size: cover, cover, cover;
       background-position: center, center, center;
@@ -136,34 +136,75 @@
   <main>
 
     <!-- ========================================================================
-         2. HERO — AKE TACOS
+         2. HERO ASIMÉTRICO — AKE TACOS
          ======================================================================== -->
-    <section id="inicio" class="max-w-5xl mx-auto px-4 sm:px-8 pt-12 sm:pt-16 pb-10 text-center">
+    <section id="inicio" class="max-w-6xl mx-auto px-4 sm:px-8 pt-10 sm:pt-14 pb-12">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
 
-      <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-ake-panel/90 border border-ake-line text-[#E5E7EB] font-display text-[11px] sm:text-xs font-medium tracking-[0.16em] uppercase mb-6">
-        <span class="w-2 h-2 rounded-full bg-ake-accent ake-pulse-dot" aria-hidden="true"></span>
-        <span>AKE Tacos · Trompo &amp; Cocina al Momento</span>
+        <!-- Columna Principal (Izquierda): Píldora + Título + Texto + Botones -->
+        <div class="lg:col-span-7 text-left space-y-5">
+          <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-ake-panel/95 border border-ake-accent/40 text-[#F3F4F6] font-display text-[11px] font-semibold tracking-[0.15em] uppercase">
+            <span class="w-2 h-2 rounded-full bg-ake-accent ake-pulse-dot" aria-hidden="true"></span>
+            <span>Trompo Caliente · Ordena en Línea</span>
+          </div>
+
+          <h1 class="font-display text-3xl sm:text-5xl font-extrabold text-white leading-[1.08] tracking-tight">
+            Tacos al momento, <span class="text-ake-maiz">directo a tu mesa</span> o domicilio.
+          </h1>
+
+          <p class="text-sm sm:text-base text-[#D1D5DB] max-w-xl leading-relaxed">
+            Elige tus platillos en el menú, ajusta cantidades con un clic y envía tu orden completa a <strong class="text-white">AKE Tacos Cloud</strong> sin llamadas ni esperas innecesarias.
+          </p>
+
+          <div class="pt-1 flex flex-wrap items-center gap-3.5">
+            <a href="#menu"
+              class="font-display inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-sm font-semibold transition">
+              Explorar Menú ↓
+            </a>
+            <a href="#pedido"
+              class="font-display inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-ake-panel/95 hover:bg-[#1C1F27] text-white border border-ake-line text-sm font-semibold transition">
+              Ir al Formulario de Pedido →
+            </a>
+          </div>
+        </div>
+
+        <!-- Columna Complementaria (Derecha): Resumen Rápido de Servicio -->
+        <aside class="lg:col-span-5 bg-ake-panel/90 backdrop-blur-md rounded-2xl p-6 border border-ake-line space-y-4">
+          <div class="flex items-center justify-between border-b border-ake-line pb-3">
+            <span class="font-display text-xs font-bold uppercase tracking-[0.16em] text-ake-accent">
+              Flujo de Pedido
+            </span>
+            <span class="text-xs font-medium text-ake-maiz">AKE Tacos Cloud</span>
+          </div>
+
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start gap-3">
+              <span class="font-display w-6 h-6 rounded-lg bg-ake-accentSoft text-ake-accent text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+              <div>
+                <p class="font-display font-semibold text-white">Selecciona del menú</p>
+                <p class="text-xs text-ake-muted">Tacos, especialidades y bebidas con suma automática.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <span class="font-display w-6 h-6 rounded-lg bg-ake-accentSoft text-ake-accent text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+              <div>
+                <p class="font-display font-semibold text-white">Elige local o envío</p>
+                <p class="text-xs text-ake-muted">Agrega tus salsas, notas especiales y datos de entrega.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <span class="font-display w-6 h-6 rounded-lg bg-ake-accentSoft text-ake-accent text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+              <div>
+                <p class="font-display font-semibold text-white">Recibe tu folio al instante</p>
+                <p class="text-xs text-ake-muted">Tu pedido viaja directo a la cola de preparación.</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
       </div>
-
-      <h1 class="font-display text-3xl sm:text-5xl md:text-[52px] font-bold text-white leading-[1.1] tracking-tight max-w-4xl mx-auto">
-        Arma tu pedido desde el menú y envíalo directo a <span class="text-ake-maiz">AKE Tacos Cloud.</span>
-      </h1>
-
-      <p class="mt-4 text-base sm:text-lg text-[#D1D5DB] max-w-2xl mx-auto leading-relaxed">
-        Selecciona tus tacos, especialidades y bebidas favoritas. Cada platillo que agregues se incorpora automáticamente al formulario de pedido para agilizar su preparación.
-      </p>
-
-      <div class="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5">
-        <a href="#menu"
-          class="font-display w-full sm:w-auto px-6 py-3.5 rounded-xl bg-ake-panel/90 hover:bg-[#1B1E25] text-white border border-ake-line text-sm font-semibold transition">
-          Explorar Menú ↓
-        </a>
-        <a href="#pedido"
-          class="font-display w-full sm:w-auto px-7 py-3.5 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-sm font-semibold transition">
-          Ir al Formulario de Pedido →
-        </a>
-      </div>
-
     </section>
 
     <!-- ========================================================================
