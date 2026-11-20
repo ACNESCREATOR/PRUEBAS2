@@ -103,7 +103,7 @@
             </span>
           </div>
           <span class="block text-[11px] font-medium text-ake-muted mt-1">
-            Monitor de Pedidos, Cocina, Reparto y Chat en Vivo
+            Monitor de Pedidos, Cocina, Reparto, Chat y Archivo (50)
           </span>
         </div>
       </div>
@@ -150,15 +150,15 @@
       </div>
 
       <div class="bg-ake-panel rounded-2xl p-5 border border-ake-line">
-        <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-sky-400">
-          En Camino / Listos
+        <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+          Carpeta Entregados
         </span>
-        <p id="kpiEnCamino" class="font-display text-3xl font-extrabold text-white mt-1.5">0</p>
-        <p class="text-xs text-ake-muted mt-1">En ruta o mostrador</p>
+        <p id="kpiArchivadosCount" class="font-display text-3xl font-extrabold text-white mt-1.5">0 / 50</p>
+        <p class="text-xs text-ake-muted mt-1">Respaldo de últimos 50 entregados</p>
       </div>
 
       <div class="bg-ake-panel rounded-2xl p-5 border border-ake-line">
-        <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+        <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-sky-400">
           Venta Total Registrada
         </span>
         <p id="kpiVentasTotal" class="font-display text-2xl sm:text-3xl font-extrabold text-white mt-1.5">$0.00</p>
@@ -167,11 +167,11 @@
     </section>
 
     <!-- ========================================================================
-         3. BARRA DE FILTROS Y BÚSQUEDA DE FOLIOS
+         3. BARRA DE FILTROS, CARPETA ARCHIVADA (50) Y BÚSQUEDA
          ======================================================================== -->
     <section class="bg-ake-surface rounded-2xl p-4 sm:p-5 border border-ake-line flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-      <!-- Filtros por estatus -->
-      <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar pedidos por estado">
+      <!-- Filtros por estatus y carpeta archivada -->
+      <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar pedidos por estado o carpeta">
         <button type="button" data-status-filter="ACTIVOS"
           class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-semibold bg-ake-accent text-white transition cursor-pointer">
           Activos (Sin entregar)
@@ -192,9 +192,9 @@
           class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
           En camino
         </button>
-        <button type="button" data-status-filter="Entregado"
-          class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
-          Entregados
+        <button type="button" data-status-filter="ARCHIVO_ENTREGADOS"
+          class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-emerald-300 border border-emerald-500/35 hover:border-emerald-400 transition cursor-pointer">
+          📁 Archivados Entregados (<span id="filterArchivoBadge">0</span>/50)
         </button>
       </div>
 
@@ -206,8 +206,17 @@
       </div>
     </section>
 
+    <!-- Aviso informativo cuando se abre la carpeta archivada -->
+    <div id="archiveFolderBanner" class="hidden bg-emerald-500/10 border border-emerald-500/35 rounded-2xl px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-100">
+      <div>
+        <strong class="font-display font-bold text-emerald-300">📁 Carpeta Archivada de Entregados</strong>
+        <span class="ml-1.5 text-[#E5E7EB]">Respaldo automático de los últimos 50 pedidos entregados.</span>
+      </div>
+      <span id="archiveCountSummary" class="font-display font-bold text-emerald-300 shrink-0">0 de 50 guardados</span>
+    </div>
+
     <!-- ========================================================================
-         4. TABLERO DE PEDIDOS EN TIEMPO REAL ("ake_pedidos")
+         4. TABLERO DE PEDIDOS EN TIEMPO REAL / CARPETA ARCHIVADA
          ======================================================================== -->
     <section aria-label="Lista de pedidos">
       <div id="ordersGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
@@ -216,12 +225,44 @@
       <div id="emptyOrdersState" class="hidden bg-ake-panel rounded-2xl p-12 border border-dashed border-ake-line text-center space-y-2">
         <p class="font-display text-lg font-bold text-white">No hay pedidos en esta vista</p>
         <p class="text-sm text-ake-muted max-w-md mx-auto">
-          Cuando un cliente envíe su orden desde la web de AKE Tacos, aparecerá aquí automáticamente con su folio, platillos, ubicación y chat.
+          Cuando un cliente envíe su orden o cuando confirmes entregas, aparecerán aquí según la carpeta seleccionada.
         </p>
       </div>
     </section>
 
   </main>
+
+  <!-- ========================================================================
+       MODAL INTERNO DE CONFIRMACIÓN ANTES DE MARCAR COMO "ENTREGADO"
+       ======================================================================== -->
+  <div id="confirmEntregaModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="confirmEntregaTitle">
+    <div class="max-w-md w-full bg-ake-panel rounded-2xl p-6 border border-ake-line shadow-2xl space-y-4">
+      <div class="flex items-start gap-3">
+        <span class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center justify-center text-base shrink-0">
+          ✓
+        </span>
+        <div>
+          <h2 id="confirmEntregaTitle" class="font-display text-lg font-bold text-white">
+            ¿Confirmar entrega del pedido?
+          </h2>
+          <p id="confirmEntregaSubtitle" class="text-xs text-ake-muted mt-1 leading-relaxed">
+            ¿Estás seguro de que el pedido ya fue entregado al cliente? Se cerrará el chat y se guardará en el respaldo de los últimos 50 entregados.
+          </p>
+        </div>
+      </div>
+
+      <div class="pt-2 flex items-center justify-end gap-2.5">
+        <button type="button" id="cancelEntregaBtn"
+          class="font-display px-4 py-2.5 rounded-xl bg-ake-bg hover:bg-[#1C1F27] text-[#D1D5DB] border border-ake-line text-xs font-semibold transition cursor-pointer">
+          Cancelar
+        </button>
+        <button type="button" id="confirmEntregaBtn"
+          class="font-display px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer">
+          Sí, marcar entregado
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ========================================================================
        5. FOOTER + FIRMA PRO. ACNES DIGITAL
@@ -240,7 +281,7 @@
   </footer>
 
   <!-- ========================================================================
-       SCRIPT MÓDULO ES6: FIRESTORE ("ake_pedidos") + ESTATUS + CHAT POR PEDIDO
+       SCRIPT MÓDULO ES6: FIRESTORE + CONFIRMACIÓN ENTREGA + ARCHIVO 50 + CHAT
        ======================================================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -269,6 +310,8 @@
     const COLLECTION_PEDIDOS = "ake_pedidos";
     const LOCAL_BACKUP_KEY = "ake_tacos_pedidos_backup";
     const LOCAL_CHAT_PREFIX = "ake_tacos_chat_";
+    const ARCHIVO_ENTREGADOS_KEY = "ake_tacos_entregados_archivo";
+    const MAX_ARCHIVO_ENTREGADOS = 50;
 
     let db = null;
     try {
@@ -279,11 +322,13 @@
     }
 
     let allOrders = [];
+    let archivedDelivered = readArchivedDelivered();
     let currentFilter = "ACTIVOS";
     let searchTerm = "";
     let soundEnabled = true;
     let knownOrderIds = new Set();
     let initialLoadCompleted = false;
+    let pendingEntregaAction = null;
 
     const chatListenersByKey = new Map();
     const chatMessagesByKey = new Map();
@@ -316,6 +361,96 @@
         return "Hace un momento";
       }
     }
+
+    // ========================================================================
+    // CARPETA ARCHIVADA DE ENTREGADOS (ÚLTIMOS 50 PEDIDOS)
+    // ========================================================================
+    function readArchivedDelivered() {
+      try {
+        const raw = localStorage.getItem(ARCHIVO_ENTREGADOS_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr.slice(0, MAX_ARCHIVO_ENTREGADOS) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeArchivedDelivered(list) {
+      const trimmed = list.slice(0, MAX_ARCHIVO_ENTREGADOS);
+      archivedDelivered = trimmed;
+      try {
+        localStorage.setItem(ARCHIVO_ENTREGADOS_KEY, JSON.stringify(trimmed));
+      } catch {
+        // Sin acción
+      }
+    }
+
+    function archiveDeliveredOrder(orderObj) {
+      if (!orderObj) return;
+      const key = orderObj.folio || orderObj.id;
+      const entry = {
+        ...orderObj,
+        estado: "Entregado",
+        archivadoEn: new Date().toISOString(),
+        _archivedId: orderObj._archivedId || `arch-${key}-${Date.now()}`
+      };
+      const withoutDup = archivedDelivered.filter((it) => (it.folio || it.id) !== key);
+      writeArchivedDelivered([entry, ...withoutDup]);
+    }
+
+    function syncFirestoreDeliveredToArchive(ordersList) {
+      const deliveredFromCloud = ordersList.filter((o) => o.estado === "Entregado");
+      if (deliveredFromCloud.length === 0) return;
+
+      const mergedMap = new Map();
+      for (const item of archivedDelivered) {
+        mergedMap.set(item.folio || item.id, item);
+      }
+      for (const item of deliveredFromCloud) {
+        const k = item.folio || item.id;
+        if (!mergedMap.has(k)) {
+          mergedMap.set(k, {
+            ...item,
+            archivadoEn: item.archivadoEn || new Date().toISOString(),
+            _archivedId: `arch-${k}`
+          });
+        }
+      }
+      const nextList = Array.from(mergedMap.values()).slice(0, MAX_ARCHIVO_ENTREGADOS);
+      writeArchivedDelivered(nextList);
+    }
+
+    // ========================================================================
+    // MODAL DE CONFIRMACIÓN INTERNA ANTES DE MARCAR COMO "ENTREGADO"
+    // ========================================================================
+    const confirmEntregaModal = document.getElementById("confirmEntregaModal");
+    const confirmEntregaSubtitle = document.getElementById("confirmEntregaSubtitle");
+    const cancelEntregaBtn = document.getElementById("cancelEntregaBtn");
+    const confirmEntregaBtn = document.getElementById("confirmEntregaBtn");
+
+    function openEntregaConfirmation(orderId, isLocal) {
+      const target = allOrders.find((o) => o.id === orderId);
+      const folioLabel = target && target.folio ? ` (${target.folio})` : "";
+      confirmEntregaSubtitle.textContent = `¿Estás seguro de que el pedido${folioLabel} ya fue entregado? Se guardará en la carpeta archivada de los últimos 50 entregados.`;
+      pendingEntregaAction = { orderId, isLocal, orderObj: target || null };
+      confirmEntregaModal.classList.remove("hidden");
+    }
+
+    function closeEntregaConfirmation() {
+      pendingEntregaAction = null;
+      confirmEntregaModal.classList.add("hidden");
+    }
+
+    cancelEntregaBtn.addEventListener("click", closeEntregaConfirmation);
+
+    confirmEntregaBtn.addEventListener("click", async () => {
+      if (!pendingEntregaAction) return;
+      const { orderId, isLocal, orderObj } = pendingEntregaAction;
+      confirmEntregaBtn.disabled = true;
+      await applyStatusChange(orderId, "Entregado", isLocal, orderObj);
+      confirmEntregaBtn.disabled = false;
+      closeEntregaConfirmation();
+    });
 
     function playNewOrderChime() {
       if (!soundEnabled) return;
@@ -363,12 +498,14 @@
     function updateKPIs() {
       const recibidos = allOrders.filter((o) => (o.estado || "Recibido") === "Recibido").length;
       const preparando = allOrders.filter((o) => o.estado === "Preparando").length;
-      const enCamino = allOrders.filter((o) => o.estado === "En camino").length;
+      const archivedLen = archivedDelivered.length;
       const ventaTotal = allOrders.reduce((acc, o) => acc + Number(o.total || 0), 0);
 
       document.getElementById("kpiRecibidos").textContent = String(recibidos);
       document.getElementById("kpiPreparando").textContent = String(preparando);
-      document.getElementById("kpiEnCamino").textContent = String(enCamino);
+      document.getElementById("kpiArchivadosCount").textContent = `${archivedLen} / ${MAX_ARCHIVO_ENTREGADOS}`;
+      document.getElementById("filterArchivoBadge").textContent = String(archivedLen);
+      document.getElementById("archiveCountSummary").textContent = `${archivedLen} de ${MAX_ARCHIVO_ENTREGADOS} guardados`;
       document.getElementById("kpiVentasTotal").textContent = formatMoney(ventaTotal);
       document.getElementById("kpiTotalOrdenes").textContent = `${allOrders.length} ${allOrders.length === 1 ? "pedido registrado" : "pedidos registrados"}`;
     }
@@ -469,11 +606,19 @@
     function renderOrdersGrid() {
       const grid = document.getElementById("ordersGrid");
       const emptyEl = document.getElementById("emptyOrdersState");
+      const archiveBanner = document.getElementById("archiveFolderBanner");
 
-      const filtered = allOrders.filter((order) => {
+      const isArchiveView = currentFilter === "ARCHIVO_ENTREGADOS";
+      archiveBanner.classList.toggle("hidden", !isArchiveView);
+
+      const sourceList = isArchiveView ? archivedDelivered : allOrders;
+
+      const filtered = sourceList.filter((order) => {
         const est = order.estado || "Recibido";
         if (currentFilter === "ACTIVOS" && est === "Entregado") return false;
-        if (currentFilter !== "ALL" && currentFilter !== "ACTIVOS" && est !== currentFilter) return false;
+        if (!isArchiveView && currentFilter !== "ALL" && currentFilter !== "ACTIVOS" && est !== currentFilter) {
+          return false;
+        }
 
         if (searchTerm) {
           const haystack = `${order.folio || ""} ${order.clienteNombre || ""} ${order.clienteTelefono || ""} ${order.direccion || ""}`.toLowerCase();
@@ -500,7 +645,9 @@
           const waHref = buildWhatsAppHref(order);
           const chatKey = order._isLocalBackup ? (order.folio || order.id) : order.id;
 
-          ensureChatListenerForOrder(order);
+          if (!isArchiveView) {
+            ensureChatListenerForOrder(order);
+          }
           const msgs = getOrderChatMessages(order);
 
           const itemsHtml = Array.isArray(order.items)
@@ -582,14 +729,20 @@
 
               <!-- Controles de Estatus, Chat y Acciones Rápidas -->
               <div class="space-y-3 pt-2 border-t border-ake-line">
-                <div>
-                  <span class="block font-display text-[10px] font-semibold uppercase tracking-wider text-ake-muted mb-1.5">
-                    Actualizar estatus (notifica al cliente):
-                  </span>
-                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                    ${statusButtonsHtml}
-                  </div>
-                </div>
+                ${
+                  !isArchiveView
+                    ? `<div>
+                         <span class="block font-display text-[10px] font-semibold uppercase tracking-wider text-ake-muted mb-1.5">
+                           Actualizar estatus (notifica al cliente):
+                         </span>
+                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                           ${statusButtonsHtml}
+                         </div>
+                       </div>`
+                    : `<div class="text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded-lg px-3 py-2">
+                         Archivado el ${escapeHtml(formatOrderTime(order.archivadoEn))}
+                       </div>`
+                }
 
                 <!-- Chat del pedido -->
                 <div class="bg-ake-bg rounded-xl p-3 border border-ake-line space-y-2">
@@ -606,19 +759,23 @@
                     ${renderChatBubblesHtml(msgs)}
                   </div>
 
-                  <form data-cloud-chat-form
-                    data-chat-key="${escapeHtml(chatKey)}"
-                    data-order-id="${escapeHtml(order.id)}"
-                    data-is-local="${order._isLocalBackup ? "1" : "0"}"
-                    class="flex items-center gap-1.5 pt-1">
-                    <input type="text" ${isClosed ? "disabled" : ""}
-                      placeholder="${isClosed ? "Pedido entregado" : "Responder al cliente..."}"
-                      class="flex-1 text-xs text-white bg-ake-panel border border-ake-line rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ake-accent disabled:opacity-50" />
-                    <button type="submit" ${isClosed ? "disabled" : ""}
-                      class="font-display px-3 py-1.5 rounded-lg bg-ake-accent hover:bg-ake-accentHover text-white text-[11px] font-bold transition cursor-pointer disabled:opacity-50 shrink-0">
-                      Enviar
-                    </button>
-                  </form>
+                  ${
+                    !isArchiveView
+                      ? `<form data-cloud-chat-form
+                           data-chat-key="${escapeHtml(chatKey)}"
+                           data-order-id="${escapeHtml(order.id)}"
+                           data-is-local="${order._isLocalBackup ? "1" : "0"}"
+                           class="flex items-center gap-1.5 pt-1">
+                           <input type="text" ${isClosed ? "disabled" : ""}
+                             placeholder="${isClosed ? "Pedido entregado" : "Responder al cliente..."}"
+                             class="flex-1 text-xs text-white bg-ake-panel border border-ake-line rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ake-accent disabled:opacity-50" />
+                           <button type="submit" ${isClosed ? "disabled" : ""}
+                             class="font-display px-3 py-1.5 rounded-lg bg-ake-accent hover:bg-ake-accentHover text-white text-[11px] font-bold transition cursor-pointer disabled:opacity-50 shrink-0">
+                             Enviar
+                           </button>
+                         </form>`
+                      : ""
+                  }
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">
@@ -644,13 +801,17 @@
                       : ""
                   }
 
-                  <button type="button"
-                    data-delete-order="${escapeHtml(order.id)}"
-                    data-is-local="${order._isLocalBackup ? "1" : "0"}"
-                    title="Eliminar registro"
-                    class="py-2 px-2.5 rounded-xl bg-[#2A1414] hover:bg-[#7F1D1D] text-[#FCA5A5] border border-[#7F1D1D]/50 text-xs font-bold cursor-pointer">
-                    🗑
-                  </button>
+                  ${
+                    !isArchiveView
+                      ? `<button type="button"
+                           data-delete-order="${escapeHtml(order.id)}"
+                           data-is-local="${order._isLocalBackup ? "1" : "0"}"
+                           title="Eliminar registro"
+                           class="py-2 px-2.5 rounded-xl bg-[#2A1414] hover:bg-[#7F1D1D] text-[#FCA5A5] border border-[#7F1D1D]/50 text-xs font-bold cursor-pointer">
+                           🗑
+                         </button>`
+                      : ""
+                  }
                 </div>
               </div>
             </article>
@@ -658,15 +819,20 @@
         })
         .join("");
 
-      // Eventos de cambio de estatus
+      // Eventos de cambio de estatus (pide confirmación interna antes de "Entregado")
       grid.querySelectorAll("[data-set-status]").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const orderId = btn.dataset.orderId;
           const nuevoEstado = btn.dataset.setStatus;
           const isLocal = btn.dataset.isLocal === "1";
 
+          if (nuevoEstado === "Entregado") {
+            openEntregaConfirmation(orderId, isLocal);
+            return;
+          }
+
           btn.disabled = true;
-          await updateOrderStatus(orderId, nuevoEstado, isLocal);
+          await applyStatusChange(orderId, nuevoEstado, isLocal, null);
         });
       });
 
@@ -722,7 +888,13 @@
       });
     }
 
-    async function updateOrderStatus(orderId, nuevoEstado, isLocal) {
+    async function applyStatusChange(orderId, nuevoEstado, isLocal, orderObj) {
+      const targetOrder = orderObj || allOrders.find((o) => o.id === orderId) || null;
+
+      if (nuevoEstado === "Entregado" && targetOrder) {
+        archiveDeliveredOrder(targetOrder);
+      }
+
       if (isLocal || !db) {
         try {
           const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
@@ -747,6 +919,8 @@
       } catch (err) {
         console.error("Error actualizando estatus:", err);
       }
+      updateKPIs();
+      renderOrdersGrid();
     }
 
     async function removeOrder(orderId, isLocal) {
@@ -782,6 +956,7 @@
       } catch {
         allOrders = [];
       }
+      syncFirestoreDeliveredToArchive(allOrders);
       updateKPIs();
       renderOrdersGrid();
     }
@@ -791,10 +966,17 @@
       btn.addEventListener("click", () => {
         currentFilter = btn.dataset.statusFilter;
         document.querySelectorAll(".cloud-filter-btn").forEach((b) => {
+          const isArchiveBtn = b.dataset.statusFilter === "ARCHIVO_ENTREGADOS";
           b.classList.remove("bg-ake-accent", "text-white", "font-semibold");
-          b.classList.add("bg-ake-panel", "text-[#D1D5DB]", "border", "border-ake-line", "font-medium");
+          b.classList.add(
+            "bg-ake-panel",
+            isArchiveBtn ? "text-emerald-300" : "text-[#D1D5DB]",
+            "border",
+            isArchiveBtn ? "border-emerald-500/35" : "border-ake-line",
+            "font-medium"
+          );
         });
-        btn.classList.remove("bg-ake-panel", "text-[#D1D5DB]", "border", "border-ake-line", "font-medium");
+        btn.classList.remove("bg-ake-panel", "text-[#D1D5DB]", "text-emerald-300", "border", "border-ake-line", "border-emerald-500/35", "font-medium");
         btn.classList.add("bg-ake-accent", "text-white", "font-semibold");
         renderOrdersGrid();
       });
@@ -852,6 +1034,7 @@
 
           initialLoadCompleted = true;
           allOrders = fetched;
+          syncFirestoreDeliveredToArchive(allOrders);
           updateKPIs();
           renderOrdersGrid();
         },
