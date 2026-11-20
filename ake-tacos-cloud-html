@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AKE TACOS CLOUD | Panel Interno de Pedidos</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Outfit + Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Outfit"', 'system-ui', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            ake: {
+              bg: '#070709',
+              surface: '#0E0F12',
+              panel: '#14161B',
+              line: 'rgba(255, 255, 255, 0.1)',
+              muted: '#9CA3AF',
+              accent: '#E11D2E',
+              accentHover: '#BE1224',
+              accentSoft: 'rgba(225, 29, 46, 0.16)',
+              maiz: '#E0A96D',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #070709;
+      color: #F4F5F7;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .cloud-grid-bg {
+      background-image:
+        radial-gradient(circle at 85% 0%, rgba(225, 29, 46, 0.14), transparent 50%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+    }
+
+    @keyframes cloudPulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      }
+      50% {
+        opacity: 0.45;
+        transform: scale(0.85);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+      }
+    }
+
+    .live-sync-dot {
+      animation: cloudPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+
+<body class="bg-ake-bg text-[#F4F5F7] cloud-grid-bg antialiased selection:bg-ake-accent selection:text-white min-h-screen flex flex-col">
+
+  <!-- ========================================================================
+       1. BARRA SUPERIOR — AKE TACOS CLOUD
+       ======================================================================== -->
+  <header class="sticky top-0 z-40 bg-ake-bg/90 backdrop-blur-md border-b border-ake-line">
+    <div class="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between gap-4">
+
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-ake-panel border border-ake-accent/40 flex items-center justify-center">
+          <svg class="w-5 h-5 text-ake-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 15c0-4.5 3.6-8 8-8s8 3.5 8 8H4z" />
+            <line x1="3" y1="18" x2="21" y2="18" stroke="#E0A96D" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-display text-lg sm:text-xl font-extrabold tracking-[0.12em] text-white leading-none">
+              AKE TACOS CLOUD
+            </span>
+            <span class="hidden sm:inline-block px-2 py-0.5 rounded-md bg-ake-accentSoft text-ake-accent font-display text-[10px] font-bold uppercase tracking-wider border border-ake-accent/30">
+              Operación Interna
+            </span>
+          </div>
+          <span class="block text-[11px] font-medium text-ake-muted mt-1">
+            Monitor de Pedidos, Cocina y Reparto en Tiempo Real
+          </span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Indicador de conexión en tiempo real -->
+        <div id="syncStatusPill" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ake-panel border border-ake-line text-xs font-medium text-[#E5E7EB]">
+          <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 live-sync-dot"></span>
+          <span id="syncStatusText">Sincronizado</span>
+        </div>
+
+        <!-- Botón de alerta sonora -->
+        <button type="button" id="toggleSoundBtn"
+          class="font-display inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-ake-panel hover:bg-[#1B1E26] border border-ake-line text-xs font-semibold text-white transition cursor-pointer"
+          title="Activar o silenciar timbre de pedido nuevo">
+          <span id="soundIcon">🔔</span>
+          <span id="soundLabel" class="hidden sm:inline">Timbre Activo</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-8">
+
+    <!-- ========================================================================
+         2. TARJETAS DE RESUMEN OPERATIVO (KPIs EN VIVO)
+         ======================================================================== -->
+    <section aria-label="Resumen operativo" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-ake-panel rounded-2xl p-5 border border-ake-line">
+        <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-ake-accent">
+          Nuevos · Recibidos
+        </span>
+        <p id="kpiRecibidos" class="font-display text-3xl font-extrabold text-white mt-1.5">0</p>
+        <p class="text-xs text-ake-muted mt-1">Por pasar a trompo/plancha</p>
+      </div>
+
+      <div class="bg-ake-panel rounded-2xl p-5 border border-ake-line">
+        <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-amber-400">
+          En Cocina · Preparando
+        </span>
+        <p id="kpiPreparando" class="font-display text-3xl font-extrabold text-white mt-1.5">0</p>
+        <p class="text-xs text-ake-muted mt-1">Órdenes armándose ahora</p>
+      </div>
+
+      <div class="bg-ake-panel rounded-2xl p-5 border border-ake-line">
+        <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-sky-400">
+          En Camino / Listos
+        </span>
+        <p id="kpiEnCamino" class="font-display text-3xl font-extrabold text-white mt-1.5">0</p>
+        <p class="text-xs text-ake-muted mt-1">En ruta o mostrador</p>
+      </div>
+
+      <div class="bg-ake-panel rounded-2xl p-5 border border-ake-line">
+        <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+          Venta Total Registrada
+        </span>
+        <p id="kpiVentasTotal" class="font-display text-2xl sm:text-3xl font-extrabold text-white mt-1.5">$0.00</p>
+        <p id="kpiTotalOrdenes" class="text-xs text-ake-muted mt-1">0 pedidos totales</p>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         3. BARRA DE FILTROS Y BÚSQUEDA DE FOLIOS
+         ======================================================================== -->
+    <section class="bg-ake-surface rounded-2xl p-4 sm:p-5 border border-ake-line flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <!-- Filtros por estatus -->
+      <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar pedidos por estado">
+        <button type="button" data-status-filter="ACTIVOS"
+          class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-semibold bg-ake-accent text-white transition cursor-pointer">
+          Activos (Sin entregar)
+        </button>
+        <button type="button" data-status-filter="ALL"
+          class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
+          Todos
+        </button>
+        <button type="button" data-status-filter="Recibido"
+          class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
+          Recibidos
+        </button>
+        <button type="button" data-status-filter="Preparando"
+          class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
+          Preparando
+        </button>
+        <button type="button" data-status-filter="En camino"
+          class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
+          En camino
+        </button>
+        <button type="button" data-status-filter="Entregado"
+          class="cloud-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
+          Entregados
+        </button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="w-full lg:w-80">
+        <label for="searchOrdersInput" class="sr-only">Buscar pedido</label>
+        <input id="searchOrdersInput" type="search" placeholder="Buscar folio, cliente o teléfono..."
+          class="w-full text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent" />
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         4. TABLERO DE PEDIDOS EN TIEMPO REAL ("ake_pedidos")
+         ======================================================================== -->
+    <section aria-label="Lista de pedidos">
+      <div id="ordersGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+
+      <!-- Estado vacío -->
+      <div id="emptyOrdersState" class="hidden bg-ake-panel rounded-2xl p-12 border border-dashed border-ake-line text-center space-y-2">
+        <p class="font-display text-lg font-bold text-white">No hay pedidos en esta vista</p>
+        <p class="text-sm text-ake-muted max-w-md mx-auto">
+          Cuando un cliente envíe su orden desde la web de AKE Tacos, aparecerá aquí automáticamente con su folio, platillos y ubicación.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       5. FOOTER + FIRMA PRO. ACNES DIGITAL
+       ======================================================================== -->
+  <footer class="bg-ake-surface border-t border-ake-line mt-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ake-muted">
+      <div>
+        <strong class="font-display text-sm tracking-[0.12em] text-white">AKE TACOS CLOUD</strong>
+        <span class="mx-2 text-white/20">·</span>
+        <span>Sistema de Gestión de Pedidos © 2026</span>
+      </div>
+      <p class="font-display tracking-wider text-[#B8BEC8]">
+        Pro. <span class="text-ake-accent font-semibold">ACNES Digital</span>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       SCRIPT MÓDULO ES6: ESCUCHA FIRESTORE ("ake_pedidos") + ACTUALIZACIÓN LIVE
+       ======================================================================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      orderBy,
+      onSnapshot,
+      doc,
+      updateDoc,
+      deleteDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Misma configuración Firebase que la página cliente para compartir "ake_pedidos"
+    const firebaseConfig = {
+      apiKey: "AIzaSyCUeewNCmWsgOFTcpM7RVOg09Eg0mtS-Gs",
+      authDomain: "acnes-clientes.firebaseapp.com",
+      projectId: "acnes-clientes",
+      storageBucket: "acnes-clientes.firebasestorage.app",
+      messagingSenderId: "18765540716",
+      appId: "1:18765540716:web:dbd0a3a17fad87c1315749"
+    };
+
+    const COLLECTION_PEDIDOS = "ake_pedidos";
+    const LOCAL_BACKUP_KEY = "ake_tacos_pedidos_backup";
+
+    let db = null;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+    } catch (err) {
+      console.warn("Firebase no inicializado:", err);
+    }
+
+    let allOrders = [];
+    let currentFilter = "ACTIVOS";
+    let searchTerm = "";
+    let soundEnabled = true;
+    let knownOrderIds = new Set();
+    let initialLoadCompleted = false;
+
+    const ESTADOS_FLUJO = ["Recibido", "Preparando", "En camino", "Entregado"];
+
+    const formatMoney = (val) =>
+      "$" + Number(val || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function formatOrderTime(ts) {
+      if (!ts) return "Hace un momento";
+      try {
+        const date = typeof ts.toDate === "function" ? ts.toDate() : new Date(ts);
+        if (Number.isNaN(date.getTime())) return "Hace un momento";
+        return date.toLocaleString("es-MX", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      } catch {
+        return "Hace un momento";
+      }
+    }
+
+    // Timbre suave con Web Audio API cuando entra un pedido nuevo
+    function playNewOrderChime() {
+      if (!soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.14);
+        gain.gain.setValueAtTime(0.14, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.42);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.42);
+      } catch {
+        // Bloqueado hasta interacción previa del usuario
+      }
+    }
+
+    const toggleSoundBtn = document.getElementById("toggleSoundBtn");
+    toggleSoundBtn.addEventListener("click", () => {
+      soundEnabled = !soundEnabled;
+      document.getElementById("soundIcon").textContent = soundEnabled ? "🔔" : "🔕";
+      document.getElementById("soundLabel").textContent = soundEnabled ? "Timbre Activo" : "Silenciado";
+      if (soundEnabled) playNewOrderChime();
+    });
+
+    function getStatusBadgeStyle(estado) {
+      switch (estado) {
+        case "Preparando":
+          return "bg-amber-500/15 text-amber-300 border-amber-500/40";
+        case "En camino":
+          return "bg-sky-500/15 text-sky-300 border-sky-500/40";
+        case "Entregado":
+          return "bg-emerald-500/15 text-emerald-300 border-emerald-500/40";
+        default:
+          return "bg-ake-accentSoft text-ake-accent border-ake-accent/40";
+      }
+    }
+
+    function updateKPIs() {
+      const recibidos = allOrders.filter((o) => (o.estado || "Recibido") === "Recibido").length;
+      const preparando = allOrders.filter((o) => o.estado === "Preparando").length;
+      const enCamino = allOrders.filter((o) => o.estado === "En camino").length;
+      const ventaTotal = allOrders.reduce((acc, o) => acc + Number(o.total || 0), 0);
+
+      document.getElementById("kpiRecibidos").textContent = String(recibidos);
+      document.getElementById("kpiPreparando").textContent = String(preparando);
+      document.getElementById("kpiEnCamino").textContent = String(enCamino);
+      document.getElementById("kpiVentasTotal").textContent = formatMoney(ventaTotal);
+      document.getElementById("kpiTotalOrdenes").textContent = `${allOrders.length} ${allOrders.length === 1 ? "pedido registrado" : "pedidos registrados"}`;
+    }
+
+    function buildWhatsAppHref(order) {
+      const cleanPhone = String(order.clienteTelefono || "").replace(/\D/g, "");
+      const phoneWithMx = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
+      const estado = order.estado || "Recibido";
+      const texto = `¡Hola ${order.clienteNombre || ""}! Te escribimos de *AKE Tacos* respecto a tu pedido *${order.folio || ""}*. Estatus actual: *${estado}*.`;
+      return `https://wa.me/${phoneWithMx}?text=${encodeURIComponent(texto)}`;
+    }
+
+    function buildMapsHref(order) {
+      if (order.mapsUrl) return order.mapsUrl;
+      if (order.ubicacionGps && order.ubicacionGps.lat && order.ubicacionGps.lng) {
+        return `https://maps.google.com/?q=${order.ubicacionGps.lat},${order.ubicacionGps.lng}`;
+      }
+      if (order.direccion) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.direccion)}`;
+      }
+      return "";
+    }
+
+    function renderOrdersGrid() {
+      const grid = document.getElementById("ordersGrid");
+      const emptyEl = document.getElementById("emptyOrdersState");
+
+      const filtered = allOrders.filter((order) => {
+        const est = order.estado || "Recibido";
+        if (currentFilter === "ACTIVOS" && est === "Entregado") return false;
+        if (currentFilter !== "ALL" && currentFilter !== "ACTIVOS" && est !== currentFilter) return false;
+
+        if (searchTerm) {
+          const haystack = `${order.folio || ""} ${order.clienteNombre || ""} ${order.clienteTelefono || ""} ${order.direccion || ""}`.toLowerCase();
+          if (!haystack.includes(searchTerm)) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = "";
+        emptyEl.classList.remove("hidden");
+        return;
+      }
+
+      emptyEl.classList.add("hidden");
+
+      grid.innerHTML = filtered
+        .map((order) => {
+          const estado = order.estado || "Recibido";
+          const badgeClass = getStatusBadgeStyle(estado);
+          const mapsUrl = buildMapsHref(order);
+          const hasExactGps = Boolean(order.mapsUrl || (order.ubicacionGps && order.ubicacionGps.lat));
+          const waHref = buildWhatsAppHref(order);
+
+          const itemsHtml = Array.isArray(order.items)
+            ? order.items
+                .map(
+                  (it) => `
+                  <div class="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-none">
+                    <span class="text-[#F3F4F6]"><strong class="text-ake-maiz">${Number(it.cantidad || 1)}x</strong> ${escapeHtml(it.nombre)}</span>
+                    <span class="text-ake-muted font-medium">${formatMoney(it.subtotal ?? (it.precio * it.cantidad))}</span>
+                  </div>
+                `
+                )
+                .join("")
+            : `<p class="text-xs text-ake-muted">Sin detalle de platillos</p>`;
+
+          const statusButtonsHtml = ESTADOS_FLUJO.map((st) => {
+            const isCurrent = st === estado;
+            return `
+              <button type="button"
+                data-set-status="${escapeHtml(st)}"
+                data-order-id="${escapeHtml(order.id)}"
+                data-is-local="${order._isLocalBackup ? "1" : "0"}"
+                class="font-display py-2 px-2 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                  isCurrent
+                    ? "bg-ake-accent text-white border-ake-accent"
+                    : "bg-ake-bg hover:bg-[#1C1F27] text-[#D1D5DB] border-ake-line"
+                }">
+                ${escapeHtml(st)}
+              </button>
+            `;
+          }).join("");
+
+          return `
+            <article class="bg-ake-panel rounded-2xl p-5 border ${estado === "Recibido" ? "border-ake-accent/70" : "border-ake-line"} flex flex-col justify-between gap-4 shadow-lg">
+              <div class="space-y-4">
+                <!-- Cabecera Folio + Estado -->
+                <div class="flex items-start justify-between gap-2 pb-3 border-b border-ake-line">
+                  <div>
+                    <span class="font-display text-base font-extrabold text-white tracking-wide block">
+                      ${escapeHtml(order.folio || "SIN-FOLIO")}
+                    </span>
+                    <span class="text-[11px] text-ake-muted block mt-0.5">
+                      ${escapeHtml(formatOrderTime(order.fechaCreacion))} · <strong class="text-[#E5E7EB]">${escapeHtml(order.tipoEntrega || "Recoger en local")}</strong>
+                    </span>
+                  </div>
+                  <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border shrink-0 ${badgeClass}">
+                    ● ${escapeHtml(estado)}
+                  </span>
+                </div>
+
+                <!-- Datos Cliente y Dirección -->
+                <div class="space-y-1.5 text-xs">
+                  <p class="text-white font-semibold text-sm">${escapeHtml(order.clienteNombre || "Cliente")}</p>
+                  <p class="text-ake-muted">Tel: <strong class="text-[#E5E7EB]">${escapeHtml(order.clienteTelefono || "—")}</strong></p>
+                  <p class="text-ake-muted leading-relaxed">
+                    Dirección: <span class="text-[#E5E7EB]">${escapeHtml(order.direccion || "No especificada")}</span>
+                  </p>
+                  ${
+                    order.notas
+                      ? `<div class="mt-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 text-amber-200">
+                           <strong>Notas / Salsas:</strong> ${escapeHtml(order.notas)}
+                         </div>`
+                      : ""
+                  }
+                </div>
+
+                <!-- Lista de Platillos -->
+                <div class="bg-ake-bg rounded-xl p-3 border border-ake-line">
+                  <span class="block font-display text-[10px] font-bold uppercase tracking-wider text-ake-muted mb-1.5">
+                    Orden (${Array.isArray(order.items) ? order.items.reduce((a, b) => a + Number(b.cantidad || 1), 0) : 0} pzas)
+                  </span>
+                  ${itemsHtml}
+                  <div class="flex items-center justify-between pt-2 mt-2 border-t border-ake-line font-display">
+                    <span class="text-xs font-bold text-white">TOTAL</span>
+                    <span class="text-base font-extrabold text-ake-accent">${formatMoney(order.total)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Controles de Estatus y Acciones Rápidas -->
+              <div class="space-y-3 pt-2 border-t border-ake-line">
+                <div>
+                  <span class="block font-display text-[10px] font-semibold uppercase tracking-wider text-ake-muted mb-1.5">
+                    Actualizar estatus (notifica al cliente):
+                  </span>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    ${statusButtonsHtml}
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                  ${
+                    mapsUrl
+                      ? `<a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer"
+                           class="flex-1 font-display text-center py-2 px-3 rounded-xl text-xs font-semibold border transition ${
+                             hasExactGps
+                               ? "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/40"
+                               : "bg-ake-bg hover:bg-[#1C1F27] text-[#E5E7EB] border-ake-line"
+                           }">
+                           ${hasExactGps ? "📍 GPS en Maps" : "🗺️ Buscar Dirección"}
+                         </a>`
+                      : ""
+                  }
+
+                  ${
+                    order.clienteTelefono
+                      ? `<a href="${escapeHtml(waHref)}" target="_blank" rel="noopener noreferrer"
+                           class="font-display text-center py-2 px-3 rounded-xl bg-[#163024] hover:bg-[#1E4231] text-emerald-300 border border-emerald-500/35 text-xs font-semibold transition">
+                           💬 WhatsApp
+                         </a>`
+                      : ""
+                  }
+
+                  <button type="button"
+                    data-delete-order="${escapeHtml(order.id)}"
+                    data-is-local="${order._isLocalBackup ? "1" : "0"}"
+                    title="Eliminar registro"
+                    class="py-2 px-2.5 rounded-xl bg-[#2A1414] hover:bg-[#7F1D1D] text-[#FCA5A5] border border-[#7F1D1D]/50 text-xs font-bold cursor-pointer">
+                    🗑
+                  </button>
+                </div>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+
+      // Eventos de cambio de estatus
+      grid.querySelectorAll("[data-set-status]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const orderId = btn.dataset.orderId;
+          const nuevoEstado = btn.dataset.setStatus;
+          const isLocal = btn.dataset.isLocal === "1";
+
+          btn.disabled = true;
+          await updateOrderStatus(orderId, nuevoEstado, isLocal);
+        });
+      });
+
+      // Eventos de eliminar pedido
+      grid.querySelectorAll("[data-delete-order]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const orderId = btn.dataset.deleteOrder;
+          const isLocal = btn.dataset.isLocal === "1";
+          if (!confirm("¿Eliminar este pedido del historial?")) return;
+          await removeOrder(orderId, isLocal);
+        });
+      });
+    }
+
+    async function updateOrderStatus(orderId, nuevoEstado, isLocal) {
+      if (isLocal || !db) {
+        try {
+          const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+          const arr = raw ? JSON.parse(raw) : [];
+          const idx = arr.findIndex((item, i) => (item.id || `local-${i}`) === orderId);
+          if (idx !== -1) {
+            arr[idx].estado = nuevoEstado;
+            localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(arr));
+          }
+        } catch {
+          // Sin acción
+        }
+        loadLocalBackupOrders();
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, COLLECTION_PEDIDOS, orderId), {
+          estado: nuevoEstado,
+          ultimaActualizacion: serverTimestamp()
+        });
+      } catch (err) {
+        console.error("Error actualizando estatus:", err);
+      }
+    }
+
+    async function removeOrder(orderId, isLocal) {
+      if (isLocal || !db) {
+        try {
+          const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+          const arr = raw ? JSON.parse(raw) : [];
+          const filtered = arr.filter((item, i) => (item.id || `local-${i}`) !== orderId);
+          localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(filtered));
+        } catch {
+          // Sin acción
+        }
+        loadLocalBackupOrders();
+        return;
+      }
+
+      try {
+        await deleteDoc(doc(db, COLLECTION_PEDIDOS, orderId));
+      } catch (err) {
+        console.error("Error eliminando pedido:", err);
+      }
+    }
+
+    function loadLocalBackupOrders() {
+      try {
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        allOrders = arr.map((item, idx) => ({
+          ...item,
+          id: item.id || `local-${idx}`,
+          _isLocalBackup: true
+        }));
+      } catch {
+        allOrders = [];
+      }
+      updateKPIs();
+      renderOrdersGrid();
+    }
+
+    // Filtros y búsqueda
+    document.querySelectorAll(".cloud-filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentFilter = btn.dataset.statusFilter;
+        document.querySelectorAll(".cloud-filter-btn").forEach((b) => {
+          b.classList.remove("bg-ake-accent", "text-white", "font-semibold");
+          b.classList.add("bg-ake-panel", "text-[#D1D5DB]", "border", "border-ake-line", "font-medium");
+        });
+        btn.classList.remove("bg-ake-panel", "text-[#D1D5DB]", "border", "border-ake-line", "font-medium");
+        btn.classList.add("bg-ake-accent", "text-white", "font-semibold");
+        renderOrdersGrid();
+      });
+    });
+
+    document.getElementById("searchOrdersInput").addEventListener("input", (e) => {
+      searchTerm = e.target.value.trim().toLowerCase();
+      renderOrdersGrid();
+    });
+
+    // Suscripción en tiempo real a Firestore ("ake_pedidos")
+    function startRealtimeOrdersListener() {
+      const syncText = document.getElementById("syncStatusText");
+      const syncDot = document.getElementById("syncStatusDot");
+
+      if (!db) {
+        syncText.textContent = "Modo Local";
+        syncDot.classList.remove("bg-emerald-400");
+        syncDot.classList.add("bg-amber-400");
+        loadLocalBackupOrders();
+        return;
+      }
+
+      const pedidosQuery = query(
+        collection(db, COLLECTION_PEDIDOS),
+        orderBy("fechaCreacion", "desc")
+      );
+
+      onSnapshot(
+        pedidosQuery,
+        (snapshot) => {
+          syncText.textContent = "En Vivo · Cloud";
+          syncDot.classList.remove("bg-amber-400", "bg-red-500");
+          syncDot.classList.add("bg-emerald-400");
+
+          const fetched = [];
+          let hasBrandNewOrder = false;
+
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            fetched.push({
+              id: docSnap.id,
+              ...data,
+              _isLocalBackup: false
+            });
+
+            if (initialLoadCompleted && !knownOrderIds.has(docSnap.id) && (data.estado || "Recibido") === "Recibido") {
+              hasBrandNewOrder = true;
+            }
+            knownOrderIds.add(docSnap.id);
+          });
+
+          if (hasBrandNewOrder) {
+            playNewOrderChime();
+          }
+
+          initialLoadCompleted = true;
+          allOrders = fetched;
+          updateKPIs();
+          renderOrdersGrid();
+        },
+        (error) => {
+          console.warn("Error leyendo Firestore, usando respaldo local:", error);
+          syncText.textContent = "Respaldo Local";
+          syncDot.classList.remove("bg-emerald-400");
+          syncDot.classList.add("bg-amber-400");
+          loadLocalBackupOrders();
+        }
+      );
+    }
+
+    startRealtimeOrdersListener();
+  </script>
+</body>
+</html>
