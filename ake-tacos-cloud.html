@@ -103,7 +103,7 @@
             </span>
           </div>
           <span class="block text-[11px] font-medium text-ake-muted mt-1">
-            Monitor de Pedidos, Cocina y Reparto en Tiempo Real
+            Monitor de Pedidos, Cocina, Reparto y Chat en Vivo
           </span>
         </div>
       </div>
@@ -216,7 +216,7 @@
       <div id="emptyOrdersState" class="hidden bg-ake-panel rounded-2xl p-12 border border-dashed border-ake-line text-center space-y-2">
         <p class="font-display text-lg font-bold text-white">No hay pedidos en esta vista</p>
         <p class="text-sm text-ake-muted max-w-md mx-auto">
-          Cuando un cliente envíe su orden desde la web de AKE Tacos, aparecerá aquí automáticamente con su folio, platillos y ubicación.
+          Cuando un cliente envíe su orden desde la web de AKE Tacos, aparecerá aquí automáticamente con su folio, platillos, ubicación y chat.
         </p>
       </div>
     </section>
@@ -240,7 +240,7 @@
   </footer>
 
   <!-- ========================================================================
-       SCRIPT MÓDULO ES6: ESCUCHA FIRESTORE ("ake_pedidos") + ACTUALIZACIÓN LIVE
+       SCRIPT MÓDULO ES6: FIRESTORE ("ake_pedidos") + ESTATUS + CHAT POR PEDIDO
        ======================================================================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -251,12 +251,12 @@
       orderBy,
       onSnapshot,
       doc,
+      addDoc,
       updateDoc,
       deleteDoc,
       serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Misma configuración Firebase que la página cliente para compartir "ake_pedidos"
     const firebaseConfig = {
       apiKey: "AIzaSyCUeewNCmWsgOFTcpM7RVOg09Eg0mtS-Gs",
       authDomain: "acnes-clientes.firebaseapp.com",
@@ -268,6 +268,7 @@
 
     const COLLECTION_PEDIDOS = "ake_pedidos";
     const LOCAL_BACKUP_KEY = "ake_tacos_pedidos_backup";
+    const LOCAL_CHAT_PREFIX = "ake_tacos_chat_";
 
     let db = null;
     try {
@@ -283,6 +284,9 @@
     let soundEnabled = true;
     let knownOrderIds = new Set();
     let initialLoadCompleted = false;
+
+    const chatListenersByKey = new Map();
+    const chatMessagesByKey = new Map();
 
     const ESTADOS_FLUJO = ["Recibido", "Preparando", "En camino", "Entregado"];
 
@@ -313,7 +317,6 @@
       }
     }
 
-    // Timbre suave con Web Audio API cuando entra un pedido nuevo
     function playNewOrderChime() {
       if (!soundEnabled) return;
       try {
@@ -332,7 +335,7 @@
         osc.start();
         osc.stop(ctx.currentTime + 0.42);
       } catch {
-        // Bloqueado hasta interacción previa del usuario
+        // Sin acción
       }
     }
 
@@ -389,6 +392,80 @@
       return "";
     }
 
+    function readLocalChat(chatKey) {
+      try {
+        const raw = localStorage.getItem(LOCAL_CHAT_PREFIX + chatKey);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function appendLocalChat(chatKey, msg) {
+      try {
+        const arr = readLocalChat(chatKey);
+        arr.push({ ...msg, creadoEn: new Date().toISOString() });
+        localStorage.setItem(LOCAL_CHAT_PREFIX + chatKey, JSON.stringify(arr.slice(-80)));
+      } catch {
+        // Sin acción
+      }
+    }
+
+    function getOrderChatMessages(order) {
+      const chatKey = order._isLocalBackup ? (order.folio || order.id) : order.id;
+      const liveMsgs = chatMessagesByKey.get(chatKey);
+      if (liveMsgs && liveMsgs.length > 0) return liveMsgs;
+      return readLocalChat(chatKey);
+    }
+
+    function ensureChatListenerForOrder(order) {
+      const chatKey = order._isLocalBackup ? (order.folio || order.id) : order.id;
+      if (!db || order._isLocalBackup || !order.id || chatListenersByKey.has(chatKey)) return;
+
+      const msgsQuery = query(
+        collection(db, COLLECTION_PEDIDOS, order.id, "mensajes"),
+        orderBy("creadoEn", "asc")
+      );
+
+      const unsub = onSnapshot(msgsQuery, (snap) => {
+        const list = [];
+        snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+        chatMessagesByKey.set(chatKey, list);
+        const container = document.querySelector(`[data-chat-box="${chatKey}"]`);
+        if (container) {
+          container.innerHTML = renderChatBubblesHtml(list);
+          container.scrollTop = container.scrollHeight;
+        }
+      });
+
+      chatListenersByKey.set(chatKey, unsub);
+    }
+
+    function renderChatBubblesHtml(messages) {
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return `<p class="text-[11px] text-ake-muted text-center py-2">Sin mensajes aún en este pedido.</p>`;
+      }
+      return messages
+        .map((m) => {
+          const isCloud = m.remitente === "AKE Tacos Cloud" || m.rol === "cloud";
+          return `
+            <div class="flex ${isCloud ? "justify-end" : "justify-start"}">
+              <div class="max-w-[85%] rounded-xl px-2.5 py-1.5 border ${
+                isCloud
+                  ? "bg-ake-accent/20 border-ake-accent/40 text-white"
+                  : "bg-ake-panel border-ake-line text-[#E5E7EB]"
+              }">
+                <span class="block text-[9px] font-bold uppercase tracking-wider ${
+                  isCloud ? "text-ake-maiz" : "text-emerald-400"
+                }">${escapeHtml(m.remitente || (isCloud ? "AKE Tacos Cloud" : "Cliente"))}</span>
+                <p class="text-[11px] leading-snug break-words">${escapeHtml(m.texto || "")}</p>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
     function renderOrdersGrid() {
       const grid = document.getElementById("ordersGrid");
       const emptyEl = document.getElementById("emptyOrdersState");
@@ -416,10 +493,15 @@
       grid.innerHTML = filtered
         .map((order) => {
           const estado = order.estado || "Recibido";
+          const isClosed = estado === "Entregado";
           const badgeClass = getStatusBadgeStyle(estado);
           const mapsUrl = buildMapsHref(order);
           const hasExactGps = Boolean(order.mapsUrl || (order.ubicacionGps && order.ubicacionGps.lat));
           const waHref = buildWhatsAppHref(order);
+          const chatKey = order._isLocalBackup ? (order.folio || order.id) : order.id;
+
+          ensureChatListenerForOrder(order);
+          const msgs = getOrderChatMessages(order);
 
           const itemsHtml = Array.isArray(order.items)
             ? order.items
@@ -498,7 +580,7 @@
                 </div>
               </div>
 
-              <!-- Controles de Estatus y Acciones Rápidas -->
+              <!-- Controles de Estatus, Chat y Acciones Rápidas -->
               <div class="space-y-3 pt-2 border-t border-ake-line">
                 <div>
                   <span class="block font-display text-[10px] font-semibold uppercase tracking-wider text-ake-muted mb-1.5">
@@ -507,6 +589,36 @@
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     ${statusButtonsHtml}
                   </div>
+                </div>
+
+                <!-- Chat del pedido -->
+                <div class="bg-ake-bg rounded-xl p-3 border border-ake-line space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="font-display text-[10px] font-bold uppercase tracking-wider text-ake-maiz">
+                      Chat del Pedido
+                    </span>
+                    <span class="text-[10px] ${isClosed ? "text-ake-muted" : "text-emerald-400"} font-semibold">
+                      ${isClosed ? "Cerrado" : "Abierto"}
+                    </span>
+                  </div>
+
+                  <div data-chat-box="${escapeHtml(chatKey)}" class="max-h-28 overflow-y-auto space-y-1.5 pr-0.5">
+                    ${renderChatBubblesHtml(msgs)}
+                  </div>
+
+                  <form data-cloud-chat-form
+                    data-chat-key="${escapeHtml(chatKey)}"
+                    data-order-id="${escapeHtml(order.id)}"
+                    data-is-local="${order._isLocalBackup ? "1" : "0"}"
+                    class="flex items-center gap-1.5 pt-1">
+                    <input type="text" ${isClosed ? "disabled" : ""}
+                      placeholder="${isClosed ? "Pedido entregado" : "Responder al cliente..."}"
+                      class="flex-1 text-xs text-white bg-ake-panel border border-ake-line rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-ake-accent disabled:opacity-50" />
+                    <button type="submit" ${isClosed ? "disabled" : ""}
+                      class="font-display px-3 py-1.5 rounded-lg bg-ake-accent hover:bg-ake-accentHover text-white text-[11px] font-bold transition cursor-pointer disabled:opacity-50 shrink-0">
+                      Enviar
+                    </button>
+                  </form>
                 </div>
 
                 <div class="flex items-center gap-2 pt-1">
@@ -555,6 +667,47 @@
 
           btn.disabled = true;
           await updateOrderStatus(orderId, nuevoEstado, isLocal);
+        });
+      });
+
+      // Eventos de envío de chat desde Cloud
+      grid.querySelectorAll("[data-cloud-chat-form]").forEach((formEl) => {
+        formEl.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const inputEl = formEl.querySelector("input");
+          const texto = inputEl ? inputEl.value.trim() : "";
+          if (!texto) return;
+
+          const chatKey = formEl.dataset.chatKey;
+          const orderId = formEl.dataset.orderId;
+          const isLocal = formEl.dataset.isLocal === "1";
+
+          if (inputEl) inputEl.value = "";
+
+          appendLocalChat(chatKey, {
+            remitente: "AKE Tacos Cloud",
+            rol: "cloud",
+            texto
+          });
+
+          const box = document.querySelector(`[data-chat-box="${chatKey}"]`);
+          if (box) {
+            box.innerHTML = renderChatBubblesHtml(readLocalChat(chatKey));
+            box.scrollTop = box.scrollHeight;
+          }
+
+          if (db && !isLocal && orderId) {
+            try {
+              await addDoc(collection(db, COLLECTION_PEDIDOS, orderId, "mensajes"), {
+                remitente: "AKE Tacos Cloud",
+                rol: "cloud",
+                texto,
+                creadoEn: serverTimestamp()
+              });
+            } catch {
+              // Queda en respaldo local
+            }
+          }
         });
       });
 
@@ -652,7 +805,6 @@
       renderOrdersGrid();
     });
 
-    // Suscripción en tiempo real a Firestore ("ake_pedidos")
     function startRealtimeOrdersListener() {
       const syncText = document.getElementById("syncStatusText");
       const syncDot = document.getElementById("syncStatusDot");
