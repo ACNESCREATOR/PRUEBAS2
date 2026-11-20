@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AKE TACOS | Menú y Pedidos en Línea</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Outfit + Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Outfit"', 'system-ui', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            ake: {
+              bg: '#070709',
+              surface: '#0E0F12',
+              panel: '#14161B',
+              line: 'rgba(255, 255, 255, 0.09)',
+              muted: '#9CA3AF',
+              accent: '#D95D24',
+              accentHover: '#BF4D19',
+              accentSoft: 'rgba(217, 93, 36, 0.14)',
+              maiz: '#E0A96D',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #070709;
+      color: #F4F5F7;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .ake-grid-bg {
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(217, 93, 36, 0.11), transparent 58%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 48px 48px, 48px 48px;
+    }
+
+    @keyframes akePulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(217, 93, 36, 0.72);
+      }
+      50% {
+        opacity: 0.45;
+        transform: scale(0.86);
+        box-shadow: 0 0 0 6px rgba(217, 93, 36, 0);
+      }
+    }
+
+    .ake-pulse-dot {
+      animation: akePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .photo-slot-placeholder {
+      background-image:
+        linear-gradient(to right, rgba(224, 169, 109, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(224, 169, 109, 0.12) 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+  </style>
+</head>
+
+<body class="bg-ake-bg text-[#F4F5F7] ake-grid-bg antialiased selection:bg-ake-accent selection:text-white">
+
+  <!-- ========================================================================
+       1. BARRA SUPERIOR STICKY — AKE TACOS
+       ======================================================================== -->
+  <header class="sticky top-0 z-40 bg-ake-bg/85 backdrop-blur-md border-b border-ake-line">
+    <div class="max-w-6xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between gap-4">
+
+      <!-- Marca -->
+      <a href="#inicio" class="flex items-center gap-3 group focus:outline-none">
+        <div class="w-10 h-10 rounded-xl bg-ake-panel border border-ake-line flex items-center justify-center group-hover:border-ake-accent transition">
+          <svg class="w-5 h-5 text-ake-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 15c0-4.5 3.6-8 8-8s8 3.5 8 8H4z" />
+            <line x1="3" y1="18" x2="21" y2="18" stroke="#E0A96D" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div>
+          <span class="block font-display text-lg sm:text-xl font-bold tracking-[0.14em] text-white leading-none">
+            AKE TACOS
+          </span>
+          <span class="block text-[11px] font-medium tracking-wider text-ake-muted mt-1">
+            Sabor Directo · Pedidos en Línea
+          </span>
+        </div>
+      </a>
+
+      <!-- Enlaces -->
+      <nav aria-label="Navegación principal" class="hidden md:flex items-center gap-7 font-display text-sm font-medium text-[#D1D5DB]">
+        <a href="#inicio" class="hover:text-ake-accent transition py-1">Inicio</a>
+        <a href="#menu" class="hover:text-ake-accent transition py-1">Menú</a>
+        <a href="#pedido" class="hover:text-ake-accent transition py-1">Hacer Pedido</a>
+      </nav>
+
+      <!-- Botón Acceso Rápido al Pedido con Contador -->
+      <a href="#pedido" id="headerOrderCounterBtn"
+        class="font-display inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-xs sm:text-sm font-semibold transition">
+        <span>Ver Pedido</span>
+        <span id="headerOrderBadge" class="px-2 py-0.5 rounded-full bg-black/30 text-white text-xs font-bold">
+          0
+        </span>
+      </a>
+
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ========================================================================
+         2. HERO — AKE TACOS
+         ======================================================================== -->
+    <section id="inicio" class="max-w-5xl mx-auto px-4 sm:px-8 pt-12 sm:pt-16 pb-10 text-center">
+
+      <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-ake-panel border border-ake-line text-[#E5E7EB] font-display text-[11px] sm:text-xs font-medium tracking-[0.16em] uppercase mb-6">
+        <span class="w-2 h-2 rounded-full bg-ake-accent ake-pulse-dot" aria-hidden="true"></span>
+        <span>AKE Tacos · Cocina al Momento</span>
+      </div>
+
+      <h1 class="font-display text-3xl sm:text-5xl md:text-[52px] font-bold text-white leading-[1.1] tracking-tight max-w-4xl mx-auto">
+        Arma tu pedido desde el menú y envíalo directo a <span class="text-ake-maiz">AKE Tacos Cloud.</span>
+      </h1>
+
+      <p class="mt-4 text-base sm:text-lg text-ake-muted max-w-2xl mx-auto leading-relaxed">
+        Selecciona tus tacos, especialidades y bebidas favoritas. Cada platillo que agregues se incorpora automáticamente al formulario de pedido para agilizar su preparación.
+      </p>
+
+      <div class="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+        <a href="#menu"
+          class="font-display w-full sm:w-auto px-6 py-3.5 rounded-xl bg-ake-panel hover:bg-[#1B1E25] text-white border border-ake-line text-sm font-semibold transition">
+          Explorar Menú ↓
+        </a>
+        <a href="#pedido"
+          class="font-display w-full sm:w-auto px-7 py-3.5 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-sm font-semibold transition">
+          Ir al Formulario de Pedido →
+        </a>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================
+         3. MENÚ INTERACTIVO CONECTADO AL FORMULARIO (LISTO PARA FOTOS)
+         ======================================================================== -->
+    <section id="menu" class="max-w-6xl mx-auto px-4 sm:px-8 py-12 scroll-mt-20">
+
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 mb-8 border-b border-ake-line">
+        <div>
+          <span class="font-display text-xs font-semibold tracking-[0.18em] uppercase text-ake-accent">
+            Carta del Día
+          </span>
+          <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mt-1">
+            Menú AKE Tacos
+          </h2>
+        </div>
+
+        <!-- Filtros por categoría -->
+        <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar menú por categoría">
+          <button type="button" data-menu-filter="ALL"
+            class="menu-filter-btn font-display px-4 py-2 rounded-xl text-xs font-semibold bg-ake-accent text-white transition cursor-pointer">
+            Todos
+          </button>
+          <button type="button" data-menu-filter="Tacos"
+            class="menu-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
+            Tacos
+          </button>
+          <button type="button" data-menu-filter="Especialidades"
+            class="menu-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
+            Especialidades
+          </button>
+          <button type="button" data-menu-filter="Bebidas"
+            class="menu-filter-btn font-display px-4 py-2 rounded-xl text-xs font-medium bg-ake-panel text-[#D1D5DB] border border-ake-line hover:border-ake-accent transition cursor-pointer">
+            Bebidas
+          </button>
+        </div>
+      </div>
+
+      <!-- Cuadrícula de Platillos (renderizada dinámicamente desde AKE_MENU_ITEMS) -->
+      <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    </section>
+
+    <!-- ========================================================================
+         4. FORMULARIO DE PEDIDOS CONECTADO AL MENÚ -> AKE TACOS CLOUD
+         ======================================================================== -->
+    <section id="pedido" class="max-w-6xl mx-auto px-4 sm:px-8 py-14 scroll-mt-20">
+
+      <div class="pb-6 mb-8 border-b border-ake-line">
+        <span class="font-display text-xs font-semibold tracking-[0.18em] uppercase text-ake-accent">
+          Formulario de Pedidos
+        </span>
+        <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mt-1">
+          Completa y Envía tu Pedido
+        </h2>
+        <p class="text-sm text-ake-muted mt-1.5">
+          Revisa los productos seleccionados del menú, ajusta cantidades y envía tu orden directamente a <strong class="text-white">AKE Tacos Cloud</strong>.
+        </p>
+      </div>
+
+      <!-- VISTA FORMULARIO -->
+      <div id="orderFormWrapper" class="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
+
+        <!-- Columna Izquierda: Resumen Dinámico de Platillos del Menú (6 cols) -->
+        <div class="lg:col-span-6 bg-ake-surface rounded-2xl p-6 border border-ake-line space-y-5">
+          <div class="flex items-center justify-between gap-2 pb-3 border-b border-ake-line">
+            <h3 class="font-display text-xl font-bold text-white">
+              Platillos en tu Pedido
+            </h3>
+            <span id="orderItemsCountLabel" class="text-xs font-semibold text-ake-accent">
+              0 productos
+            </span>
+          </div>
+
+          <!-- Lista de ítems incorporados desde el menú -->
+          <div id="orderItemsList" class="space-y-3 min-h-[140px]"></div>
+
+          <!-- Totales -->
+          <div class="pt-4 border-t border-ake-line space-y-2 text-sm">
+            <div class="flex justify-between text-ake-muted">
+              <span>Subtotal de platillos:</span>
+              <span id="orderSubtotalText" class="font-semibold text-white">$0.00</span>
+            </div>
+            <div class="flex justify-between items-center pt-2 border-t border-ake-line font-display">
+              <span class="text-base font-bold text-white">TOTAL ESTIMADO:</span>
+              <span id="orderTotalText" class="text-2xl font-extrabold text-ake-accent">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Datos de Entrega y Envío a Firestore (6 cols) -->
+        <form id="akePedidoForm" novalidate class="lg:col-span-6 bg-ake-panel rounded-2xl p-6 sm:p-7 border border-ake-line space-y-5">
+
+          <h3 class="font-display text-xl font-bold text-white pb-2 border-b border-ake-line">
+            Datos del Pedido
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="clienteNombreInput" class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB] mb-1.5">
+                Nombre *
+              </label>
+              <input id="clienteNombreInput" type="text" required placeholder="Ej. Carlos Ramírez"
+                class="w-full text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent" />
+            </div>
+
+            <div>
+              <label for="clienteTelefonoInput" class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB] mb-1.5">
+                Teléfono / WhatsApp *
+              </label>
+              <input id="clienteTelefonoInput" type="tel" required placeholder="Ej. 55 9876 5432"
+                class="w-full text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent" />
+            </div>
+          </div>
+
+          <!-- Modalidad de entrega -->
+          <div>
+            <span class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB] mb-2">
+              Modalidad de entrega *
+            </span>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="cursor-pointer">
+                <input type="radio" name="tipoEntrega" value="Recoger en local" class="peer sr-only" checked />
+                <div class="font-display text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-ake-bg border border-ake-line text-[#D1D5DB] peer-checked:bg-ake-accent peer-checked:text-white peer-checked:border-ake-accent transition">
+                  🏪 Recoger en local
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="tipoEntrega" value="Envío a domicilio" class="peer sr-only" />
+                <div class="font-display text-center text-xs font-semibold py-2.5 px-3 rounded-xl bg-ake-bg border border-ake-line text-[#D1D5DB] peer-checked:bg-ake-accent peer-checked:text-white peer-checked:border-ake-accent transition">
+                  🛵 Envío a domicilio
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Dirección (se resalta cuando es envío a domicilio) -->
+          <div id="direccionEntregaGroup">
+            <label for="direccionEntregaInput" class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB] mb-1.5">
+              Dirección / Referencias (si aplica)
+            </label>
+            <input id="direccionEntregaInput" type="text" placeholder="Calle, número, colonia y referencias"
+              class="w-full text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent" />
+          </div>
+
+          <!-- Notas de preparación / salsas -->
+          <div>
+            <label for="notasPedidoInput" class="block font-display text-xs font-semibold uppercase tracking-wider text-[#D1D5DB] mb-1.5">
+              Notas de preparación o salsas
+            </label>
+            <textarea id="notasPedidoInput" rows="3" placeholder="Ej. Salsa verde aparte, sin cebolla en dos tacos, bien dorados..."
+              class="w-full text-sm text-white bg-ake-bg border border-ake-line rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-ake-accent"></textarea>
+          </div>
+
+          <!-- Error en línea -->
+          <div id="pedidoErrorBox" class="hidden text-xs font-semibold text-[#FCA5A5] bg-[#451A1A] border border-[#991B1B] rounded-xl px-4 py-3"></div>
+
+          <button id="submitPedidoBtn" type="submit"
+            class="font-display w-full py-3.5 px-6 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-sm font-bold tracking-wide transition flex items-center justify-center gap-2 cursor-pointer">
+            <span>Enviar Pedido a AKE Tacos Cloud</span>
+            <span>→</span>
+          </button>
+
+        </form>
+
+      </div>
+
+      <!-- VISTA COMPROBANTE TRAS ENVIAR -->
+      <div id="orderReceiptWrapper" class="hidden max-w-2xl mx-auto bg-ake-panel rounded-2xl p-6 sm:p-8 border border-ake-accent/60 shadow-2xl space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-ake-line">
+          <div>
+            <span class="font-display text-xs font-semibold uppercase tracking-widest text-ake-accent">
+              ✓ Pedido Enviado a AKE Tacos Cloud
+            </span>
+            <h3 class="font-display text-2xl sm:text-3xl font-bold text-white mt-1">
+              Folio: <span id="receiptFolio" class="text-ake-accent">AKE-2026-0000</span>
+            </h3>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-ake-accentSoft text-ake-accent border border-ake-accent/35 self-start sm:self-auto">
+            ● Recibido
+          </span>
+        </div>
+
+        <p class="text-sm text-ake-muted leading-relaxed">
+          Tu orden ya quedó registrada para <strong class="text-white" id="receiptCliente"></strong> (<span id="receiptEntrega"></span>).
+        </p>
+
+        <div id="receiptItemsBreakdown" class="bg-ake-bg rounded-xl p-4 border border-ake-line space-y-2 text-xs"></div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-ake-line font-display">
+          <span class="text-sm font-bold text-white">TOTAL DEL PEDIDO:</span>
+          <span id="receiptTotal" class="text-xl font-extrabold text-ake-accent">$0.00</span>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button type="button" id="newOrderResetBtn"
+            class="font-display px-5 py-2.5 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-xs font-semibold transition cursor-pointer">
+            + Hacer otro pedido
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       5. FOOTER + FIRMA PRO. ACNES DIGITAL
+       ======================================================================== -->
+  <footer class="bg-ake-surface border-t border-ake-line mt-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ake-muted">
+      <div>
+        <strong class="font-display text-sm tracking-[0.12em] text-white">AKE TACOS</strong>
+        <span class="mx-2 text-white/20">·</span>
+        <span>© 2026 Todos los derechos reservados.</span>
+      </div>
+      <p class="font-display tracking-wider text-[#B8BEC8]">
+        Pro. <span class="text-ake-accent font-semibold">ACNES Digital</span>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       SCRIPT MÓDULO ES6: MENÚ + FORMULARIO + FIRESTORE ("ake_pedidos")
+       ======================================================================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Reemplaza firebaseConfig con el proyecto Firebase de AKE Tacos cuando lo crees
+    const firebaseConfig = {
+      apiKey: "AIzaSyCUeewNCmWsgOFTcpM7RVOg09Eg0mtS-Gs",
+      authDomain: "acnes-clientes.firebaseapp.com",
+      projectId: "acnes-clientes",
+      storageBucket: "acnes-clientes.firebasestorage.app",
+      messagingSenderId: "18765540716",
+      appId: "1:18765540716:web:dbd0a3a17fad87c1315749"
+    };
+
+    const COLLECTION_PEDIDOS = "ake_pedidos";
+    const LOCAL_BACKUP_KEY = "ake_tacos_pedidos_backup";
+
+    let db = null;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+    } catch (err) {
+      console.warn("Firebase no inicializado:", err);
+    }
+
+    // Catálogo base del menú (listo para agregar fotoUrl cuando subas tus imágenes)
+    const AKE_MENU_ITEMS = [
+      {
+        id: "taco-asada",
+        nombre: "Taco de Carne Asada",
+        categoria: "Tacos",
+        precio: 28,
+        descripcion: "Tortilla de maíz, carne asada al carbón, cilantro y cebolla.",
+        fotoUrl: ""
+      },
+      {
+        id: "taco-adobada",
+        nombre: "Taco al Pastor / Adobada",
+        categoria: "Tacos",
+        precio: 26,
+        descripcion: "Marinada tradicional con chile guajillo y especias, servida con piña.",
+        fotoUrl: ""
+      },
+      {
+        id: "taco-suadero",
+        nombre: "Taco de Suadero",
+        categoria: "Tacos",
+        precio: 28,
+        descripcion: "Corte jugoso cocinado lentamente para lograr textura suave y dorada.",
+        fotoUrl: ""
+      },
+      {
+        id: "esp-quesataco",
+        nombre: "Quesataco Especial",
+        categoria: "Especialidades",
+        precio: 46,
+        descripcion: "Tortilla con costra de queso fundido, proteína a elegir y salsas de la casa.",
+        fotoUrl: ""
+      },
+      {
+        id: "esp-gringa",
+        nombre: "Gringa AKE",
+        categoria: "Especialidades",
+        precio: 52,
+        descripcion: "Tortilla de harina grande, queso manchego derretido y carne al gusto.",
+        fotoUrl: ""
+      },
+      {
+        id: "beb-agua-fresca",
+        nombre: "Agua Fresca del Día (500 ml)",
+        categoria: "Bebidas",
+        precio: 25,
+        descripcion: "Preparada al día, bien fría para acompañar tus tacos.",
+        fotoUrl: ""
+      }
+    ];
+
+    // Estado del carrito/pedido: { [itemId]: { ...item, qty } }
+    const orderCart = new Map();
+    let activeCategoryFilter = "ALL";
+
+    const formatMoney = (val) =>
+      "$" + Number(val || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderMenuGrid() {
+      const grid = document.getElementById("menuGrid");
+      const items = AKE_MENU_ITEMS.filter(
+        (item) => activeCategoryFilter === "ALL" || item.categoria === activeCategoryFilter
+      );
+
+      grid.innerHTML = items
+        .map((item) => {
+          const inCart = orderCart.get(item.id);
+          const qty = inCart ? inCart.qty : 0;
+
+          const mediaBlock = item.fotoUrl
+            ? `<div class="w-full h-40 rounded-xl overflow-hidden mb-4 bg-ake-bg border border-ake-line">
+                 <img src="${escapeHtml(item.fotoUrl)}" alt="${escapeHtml(item.nombre)}" class="w-full h-full object-cover" />
+               </div>`
+            : `<div class="photo-slot-placeholder w-full h-36 rounded-xl mb-4 bg-ake-bg border border-dashed border-ake-line flex flex-col items-center justify-center text-center px-3">
+                 <span class="font-display text-[11px] font-semibold uppercase tracking-wider text-ake-maiz">Espacio reservado para foto</span>
+                 <span class="text-[11px] text-ake-muted mt-0.5">${escapeHtml(item.categoria)}</span>
+               </div>`;
+
+          return `
+            <article class="bg-ake-panel rounded-2xl p-5 border border-ake-line hover:border-ake-accent/60 transition flex flex-col justify-between">
+              <div>
+                ${mediaBlock}
+                <div class="flex items-start justify-between gap-2">
+                  <h3 class="font-display text-lg font-bold text-white">${escapeHtml(item.nombre)}</h3>
+                  <span class="font-display text-base font-extrabold text-ake-accent shrink-0">${formatMoney(item.precio)}</span>
+                </div>
+                <p class="text-xs sm:text-sm text-ake-muted mt-1.5 leading-relaxed">${escapeHtml(item.descripcion)}</p>
+              </div>
+
+              <div class="mt-5 pt-3.5 border-t border-ake-line flex items-center justify-between gap-2">
+                <span class="text-xs text-ake-muted">
+                  ${qty > 0 ? `En pedido: <strong class="text-white">${qty}</strong>` : "Listo para agregar"}
+                </span>
+                <button type="button" data-add-menu-item="${escapeHtml(item.id)}"
+                  class="add-menu-btn font-display px-4 py-2 rounded-xl bg-ake-accent hover:bg-ake-accentHover text-white text-xs font-semibold transition cursor-pointer">
+                  ${qty > 0 ? "+ Agregar otro" : "+ Agregar al pedido"}
+                </button>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+
+      grid.querySelectorAll("[data-add-menu-item]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const item = AKE_MENU_ITEMS.find((m) => m.id === btn.dataset.addMenuItem);
+          if (!item) return;
+          const existing = orderCart.get(item.id);
+          if (existing) {
+            existing.qty += 1;
+          } else {
+            orderCart.set(item.id, { ...item, qty: 1 });
+          }
+          renderMenuGrid();
+          renderOrderSummary();
+        });
+      });
+    }
+
+    function renderOrderSummary() {
+      const listEl = document.getElementById("orderItemsList");
+      const countLabel = document.getElementById("orderItemsCountLabel");
+      const badgeEl = document.getElementById("headerOrderBadge");
+      const subtotalEl = document.getElementById("orderSubtotalText");
+      const totalEl = document.getElementById("orderTotalText");
+
+      const entries = Array.from(orderCart.values());
+      const totalUnits = entries.reduce((acc, it) => acc + it.qty, 0);
+      const subtotal = entries.reduce((acc, it) => acc + it.qty * it.precio, 0);
+
+      badgeEl.textContent = String(totalUnits);
+      countLabel.textContent = `${totalUnits} ${totalUnits === 1 ? "producto" : "productos"}`;
+      subtotalEl.textContent = formatMoney(subtotal);
+      totalEl.textContent = formatMoney(subtotal);
+
+      if (entries.length === 0) {
+        listEl.innerHTML = `
+          <div class="rounded-xl border border-dashed border-ake-line bg-ake-bg/60 p-6 text-center text-xs text-ake-muted">
+            Aún no has agregado platillos del menú. Haz clic en <strong class="text-white">"+ Agregar al pedido"</strong> en cualquier tarjeta de arriba.
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = entries
+        .map(
+          (it) => `
+          <div class="flex items-center justify-between gap-3 bg-ake-bg rounded-xl p-3.5 border border-ake-line">
+            <div class="min-w-0">
+              <p class="font-display text-sm font-bold text-white truncate">${escapeHtml(it.nombre)}</p>
+              <p class="text-xs text-ake-muted">${formatMoney(it.precio)} c/u · Subtotal: <strong class="text-[#E5E7EB]">${formatMoney(it.precio * it.qty)}</strong></p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" data-qty-minus="${escapeHtml(it.id)}" aria-label="Restar cantidad"
+                class="w-7 h-7 rounded-lg bg-ake-panel hover:bg-ake-line text-white text-xs font-bold border border-ake-line cursor-pointer">−</button>
+              <span class="w-6 text-center text-xs font-bold text-white">${it.qty}</span>
+              <button type="button" data-qty-plus="${escapeHtml(it.id)}" aria-label="Sumar cantidad"
+                class="w-7 h-7 rounded-lg bg-ake-panel hover:bg-ake-line text-white text-xs font-bold border border-ake-line cursor-pointer">+</button>
+              <button type="button" data-qty-remove="${escapeHtml(it.id)}" aria-label="Quitar platillo"
+                class="w-7 h-7 rounded-lg bg-[#2A1414] hover:bg-[#7F1D1D] text-[#FCA5A5] text-xs font-bold border border-[#7F1D1D]/50 cursor-pointer">✕</button>
+            </div>
+          </div>
+        `
+        )
+        .join("");
+
+      listEl.querySelectorAll("[data-qty-minus]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const it = orderCart.get(btn.dataset.qtyMinus);
+          if (!it) return;
+          if (it.qty > 1) {
+            it.qty -= 1;
+          } else {
+            orderCart.delete(it.id);
+          }
+          renderMenuGrid();
+          renderOrderSummary();
+        });
+      });
+
+      listEl.querySelectorAll("[data-qty-plus]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const it = orderCart.get(btn.dataset.qtyPlus);
+          if (!it) return;
+          it.qty += 1;
+          renderMenuGrid();
+          renderOrderSummary();
+        });
+      });
+
+      listEl.querySelectorAll("[data-qty-remove]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          orderCart.delete(btn.dataset.qtyRemove);
+          renderMenuGrid();
+          renderOrderSummary();
+        });
+      });
+    }
+
+    // Filtros del menú
+    document.querySelectorAll(".menu-filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activeCategoryFilter = btn.dataset.menuFilter;
+        document.querySelectorAll(".menu-filter-btn").forEach((b) => {
+          b.classList.remove("bg-ake-accent", "text-white", "font-semibold");
+          b.classList.add("bg-ake-panel", "text-[#D1D5DB]", "border", "border-ake-line", "font-medium");
+        });
+        btn.classList.remove("bg-ake-panel", "text-[#D1D5DB]", "border", "border-ake-line", "font-medium");
+        btn.classList.add("bg-ake-accent", "text-white", "font-semibold");
+        renderMenuGrid();
+      });
+    });
+
+    // Envío del formulario de pedidos
+    const akePedidoForm = document.getElementById("akePedidoForm");
+    const pedidoErrorBox = document.getElementById("pedidoErrorBox");
+    const submitPedidoBtn = document.getElementById("submitPedidoBtn");
+
+    function showPedidoError(msg) {
+      pedidoErrorBox.textContent = msg;
+      pedidoErrorBox.classList.remove("hidden");
+    }
+
+    function hidePedidoError() {
+      pedidoErrorBox.classList.add("hidden");
+      pedidoErrorBox.textContent = "";
+    }
+
+    function saveBackupOrder(payload) {
+      try {
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        arr.unshift(payload);
+        localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(arr.slice(0, 100)));
+      } catch {
+        // Sin acción
+      }
+    }
+
+    akePedidoForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hidePedidoError();
+
+      const items = Array.from(orderCart.values()).map((it) => ({
+        id: it.id,
+        nombre: it.nombre,
+        categoria: it.categoria,
+        precio: it.precio,
+        cantidad: it.qty,
+        subtotal: it.precio * it.qty
+      }));
+
+      if (items.length === 0) {
+        showPedidoError("Agrega al menos un platillo del menú antes de enviar tu pedido.");
+        return;
+      }
+
+      const clienteNombre = document.getElementById("clienteNombreInput").value.trim();
+      const clienteTelefono = document.getElementById("clienteTelefonoInput").value.trim();
+      const entregaEl = document.querySelector('input[name="tipoEntrega"]:checked');
+      const tipoEntrega = entregaEl ? entregaEl.value : "Recoger en local";
+      const direccion = document.getElementById("direccionEntregaInput").value.trim();
+      const notas = document.getElementById("notasPedidoInput").value.trim();
+
+      if (!clienteNombre || !clienteTelefono) {
+        showPedidoError("Por favor ingresa tu nombre y teléfono/WhatsApp.");
+        return;
+      }
+
+      if (tipoEntrega === "Envío a domicilio" && !direccion) {
+        showPedidoError("Indica tu dirección o referencias para el envío a domicilio.");
+        return;
+      }
+
+      const total = items.reduce((acc, i) => acc + i.subtotal, 0);
+      const folio = `AKE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const pedidoDoc = {
+        folio,
+        marca: "AKE Tacos",
+        clienteNombre,
+        clienteTelefono,
+        tipoEntrega,
+        direccion,
+        notas,
+        items,
+        total,
+        estado: "Recibido",
+        fechaCreacion: serverTimestamp()
+      };
+
+      submitPedidoBtn.disabled = true;
+      submitPedidoBtn.innerHTML = `<span>Enviando pedido...</span>`;
+
+      try {
+        if (!db) throw new Error("Firestore no inicializado");
+        await addDoc(collection(db, COLLECTION_PEDIDOS), pedidoDoc);
+      } catch {
+        saveBackupOrder({ ...pedidoDoc, fechaCreacion: new Date().toISOString() });
+      }
+
+      submitPedidoBtn.disabled = false;
+      submitPedidoBtn.innerHTML = `<span>Enviar Pedido a AKE Tacos Cloud</span><span>→</span>`;
+
+      document.getElementById("receiptFolio").textContent = folio;
+      document.getElementById("receiptCliente").textContent = clienteNombre;
+      document.getElementById("receiptEntrega").textContent = tipoEntrega;
+      document.getElementById("receiptTotal").textContent = formatMoney(total);
+      document.getElementById("receiptItemsBreakdown").innerHTML = items
+        .map(
+          (i) =>
+            `<div class="flex justify-between text-[#E5E7EB]">
+               <span>${i.cantidad}x ${escapeHtml(i.nombre)}</span>
+               <strong class="text-white">${formatMoney(i.subtotal)}</strong>
+             </div>`
+        )
+        .join("");
+
+      document.getElementById("orderFormWrapper").classList.add("hidden");
+      document.getElementById("orderReceiptWrapper").classList.remove("hidden");
+      document.getElementById("pedido").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.getElementById("newOrderResetBtn").addEventListener("click", () => {
+      orderCart.clear();
+      akePedidoForm.reset();
+      hidePedidoError();
+      renderMenuGrid();
+      renderOrderSummary();
+      document.getElementById("orderReceiptWrapper").classList.add("hidden");
+      document.getElementById("orderFormWrapper").classList.remove("hidden");
+    });
+
+    renderMenuGrid();
+    renderOrderSummary();
+  </script>
+</body>
+</html>
